@@ -472,17 +472,17 @@ Figure~\ref{fig:representative_spectrum} shows the qualitative behaviour of the 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Aggregate reconstruction quality on the held-out test split. The S/N column reports the linear per-spectrum reconstruction statistic in Equation~\ref{eq:snr_def}, averaged over the $1000$ held-out spectra and $10$ independent noise realizations. Classical and PCA hyperparameters are selected on the validation split. The clean-template PCA row is an oracle reference because it is fit on noiseless templates and is not deployable when only noisy survey spectra are available. The blindspot row is trained from noisy spectra only; clean spectra enter only this evaluation.}
+\caption{Aggregate reconstruction quality on the held-out test split. The Mean S/N column reports the linear per-spectrum reconstruction statistic in Equation~\ref{eq:snr_def}, averaged over the $1000$ held-out spectra and $10$ independent noise realizations. The Median [$5\%, 95\%$] column reports the per-spectrum distribution over the held-out spectra. Classical and PCA hyperparameters are selected on the validation split. The clean-template PCA row is an oracle reference because it is fit on noiseless templates and is not deployable when only noisy survey spectra are available. The blindspot row is trained from noisy spectra only; clean spectra enter only this evaluation.}
 \label{tab:main_baselines}
-\begin{tabular}{lllc}
+\begin{tabular}{lllcc}
 \hline
-Method & Fit or training information & Status & Mean S/N \\
+Method & Fit or training information & Status & Mean S/N & Median S/N [$5\%, 95\%$] \\
 \hline
-Noisy input & none & observed input & $7.8$ \\
-Wavelet BayesShrink & validation-tuned noisy-spectrum filter & reference & $27.2$ \\
-Noisy-PCA, $k\!=\!16$ & PCA fit on noisy training spectra & noisy-only reference & $54.4$ \\
-Clean-template PCA oracle, $k\!=\!16$ & PCA fit on clean templates & non-deployable oracle & $56.0$ \\
-\textbf{Blindspot output} & noisy-only blindspot training & \textbf{self-supervised model} & $\mathbf{124}$ \\
+Noisy input & none & observed input & $7.8$ & $7.8$ [$3.0$, $14.5$] \\
+Wavelet BayesShrink & validation-tuned noisy-spectrum filter & reference & $27.2$ & $24.9$ [$13.3$, $49.5$] \\
+Noisy-PCA, $k\!=\!16$ & PCA fit on noisy training spectra & noisy-only reference & $54.4$ & $51.4$ [$26.6$, $91.1$] \\
+Clean-template PCA oracle, $k\!=\!16$ & PCA fit on clean templates & non-deployable oracle & $56.0$ & $53.3$ [$27.3$, $93.3$] \\
+\textbf{Blindspot output} & noisy-only blindspot training & \textbf{self-supervised model} & $\mathbf{124}$ & $\mathbf{112}$ [$\mathbf{47}$, $\mathbf{253}$] \\
 \hline
 \end{tabular}
 \end{table}
