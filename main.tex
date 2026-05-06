@@ -224,7 +224,7 @@ The forward pass enforces one invariant: the feature used to predict the flux in
 % \label{fig:blindspot_architecture}
 % \end{figure}
 
-\subsection{Theory and Information Bounds}
+\subsection{Identifiability and Recoverability}
 \label{sec:theory}
 \paragraph{Blindspot exclusion prevents the identity shortcut.}
 If the center pixel is visible, the noisy-target objective has a zero-loss copy solution:
@@ -264,7 +264,7 @@ between two variances: let $\tau^{2}$ denote the conditional clean-flux variance
     \tau^{2} := \mathrm{Var}(x_{\lambda}\mid\Omega_{\lambda}),
     \label{eq:gamma}
 \end{equation}
-Small $\gamma$ means the context predicts the clean flux more accurately than the noisy center observation itself, so the hidden wavelength is recoverable in the sense needed for blindspot denoising; the local Gaussian risk calculation behind this interpretation is given in Appendix~\ref{app:gamma_risk_interpretation}.
+Small $\gamma$ means the context predicts the clean flux more accurately than the noisy center observation itself, so the hidden wavelength is recoverable in the sense needed for blindspot denoising. In this heteroscedastic simulator, $\gamma$ is a spectrum-level recoverability summary whose per-pixel interpretation is recorded in Appendix~\ref{app:gamma_heteroscedasticity}.
 \paragraph{The target support has a physically set correlation scale.}
 The reason to expect small $\gamma$ is not generic smoothness, but the ratio between the spectral correlation length and the per-bin noise scale. That correlation length is set jointly by stellar physics and by the instrument: intrinsic line widths and line density vary across dwarfs and giants, while the simulated line-spread function spreads unresolved features over several wavelength samples. Neighboring bins can therefore predict a withheld bin only when the astrophysical and instrumental line widths are sampled by enough pixels. We verify this S/N range directly on held-out clean BOSZ spectra: simple local predictors leave residual variance below about $10^{-3}$ of the injected per-pixel noise variance in the conservative $95$th-percentile summary, with the full per-estimator measurement table given in Appendix~\ref{app:controls_gamma}. Spectra with sharper lines, different gravity distributions, or a different line-spread function should be checked separately rather than assumed to share the same small-$\gamma$ range; we therefore use the small-$\gamma$ argument as a range statement for this simulated data set, not as an unconditional guarantee beyond it.
 
@@ -456,12 +456,12 @@ The blindspot row sits above the validation-tuned pixel-domain filter, the noisy
 \subsection{Downstream clean-trained calibrator transfer}
 \label{sec:results_downstream_logg}
 
-A pixel-level reconstruction gain is useful for Galactic Archaeology only if the denoised spectrum still feeds an estimator that was trained on clean inputs. We therefore hold the full-spectrum stellar-label calibrator of Section~\ref{sec:implementation} fixed and feed it five representations of the same held-out spectra: clean reference, blindspot output $\hat{x}$, noisy input $y$, validation-tuned box-car smoother, and validation-tuned Savitzky--Golay smoother. The calibrator is a LightGBM regressor fit on $30{,}000$ clean training spectra and never retrained on noisy or denoised input; the test partition is a disjoint $5{,}000$-spectrum BOSZ subset (Appendix~\ref{app:contract}). The clean-reference row is an upper bound under this fixed map, not a deployable comparison.
+A pixel-level reconstruction gain is useful for Galactic Archaeology only if the denoised spectrum still feeds an estimator that was trained on clean inputs. Surface gravity carries the dwarf--giant separation that selects faint Galactic Archaeology samples; the downstream audit therefore uses a $\log g$ calibrator trained only on clean spectra and applied unchanged to the denoised reconstructions. We hold the full-spectrum calibrator of Section~\ref{sec:implementation} fixed and feed it five representations of the same held-out spectra: clean reference, blindspot output $\hat{x}$, noisy input $y$, validation-tuned box-car smoother, and validation-tuned Savitzky--Golay smoother. The calibrator is tested on a disjoint $5{,}000$-spectrum BOSZ partition (Appendix~\ref{app:contract}). The clean-reference row is an upper bound under this fixed map, not a deployable comparison.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{figs/fig4_downstream_clean_domain_transfer.pdf}
-\caption{Frozen clean-trained downstream calibration after denoising. Full-spectrum LightGBM calibrators are trained only on clean spectra and then evaluated, without refitting, on the same held-out spectra represented as clean inputs, blindspot outputs, box-car smooths, Savitzky--Golay smooths, or noisy inputs. \textbf{Left:} centered robust-scatter ratio relative to the noisy input at $n_{\rm train}=30{,}000$ for four BOSZ labels; small points are five random splits, large markers are split means, and bars are split standard deviations. \textbf{Right:} residual distributions for the $\log g$ audit on the $5{,}000$-spectrum held-out partition in Table~\ref{tab:downstream_logg}, where $\mu$ denotes the mean bias and $\sigma$ the centered robust scatter, both in dex. The paired-bootstrap blindspot/noisy ratios for this $\log g$ split are $0.64$ $[0.61,\,0.66]$ for $\sigma_{\rm rob}$ and $0.70$ $[0.68,\,0.72]$ for MAE.}
+\caption{Frozen clean-trained downstream calibration after denoising. Full-spectrum LightGBM calibrators are trained only on clean spectra and then evaluated, without refitting, on the same held-out spectra represented as clean inputs, blindspot outputs, box-car smooths, Savitzky--Golay smooths, or noisy inputs. \textbf{Left:} centered robust-scatter ratio relative to the noisy input at $n_{\rm train}=30{,}000$ for four BOSZ labels; small points are five random splits, large markers are split means, and bars are split standard deviations. \textbf{Right:} residual distributions for the $\log g$ audit on the $5{,}000$-spectrum held-out partition in Table~\ref{tab:downstream_logg}. Side labels report $\mu$ (mean bias) and $\sigma$ (centered robust scatter) in dex.}
 \label{fig:downstream_clean_domain_transfer}
 \end{figure}
 
@@ -474,20 +474,20 @@ A pixel-level reconstruction gain is useful for Galactic Archaeology only if the
 \hline
 Input spectrum & $\sigma_{\rm rob}$ [dex] & MAE [dex] & Bias [dex] & $R^{2}$ \\
 \hline
-Clean input (upper reference)         & $0.22$ & $0.21$ & $+0.00$ & $0.94$ \\
-\textbf{Blindspot output (ours)}      & $\mathbf{0.80}$ & $\mathbf{0.67}$ & $\mathbf{+0.02}$ & $\mathbf{0.46}$ \\
-Box-car smoother (val.\ tuned)        & $1.09$ & $0.87$ & $-0.09$ & $0.14$ \\
-Savitzky--Golay smoother (val.\ tuned)& $1.09$ & $0.87$ & $-0.09$ & $0.13$ \\
-Noisy input                           & $1.26$ & $0.96$ & $-0.17$ & $0.01$ \\
+Clean input (upper reference)         & $0.22$ & $0.21$ & $+0.001$ & $0.94$ \\
+\textbf{Blindspot output (ours)}      & $\mathbf{0.80}$ & $\mathbf{0.67}$ & $\mathbf{+0.020}$ & $\mathbf{0.46}$ \\
+Box-car smoother (val.\ tuned)        & $1.09$ & $0.87$ & $-0.086$ & $0.14$ \\
+Savitzky--Golay smoother (val.\ tuned)& $1.09$ & $0.87$ & $-0.089$ & $0.13$ \\
+Noisy input                           & $1.26$ & $0.96$ & $-0.170$ & $0.01$ \\
 \hline
 \end{tabular}
 \end{table}
 
-Across the four BOSZ labels in Figure~\ref{fig:downstream_clean_domain_transfer}, the blindspot point sits below both noisy and smoother points at every label, and the same ordering holds across the five split seeds. The validation-tuned smoothers reduce scatter for some labels but stay close to the noisy-input scale for surface gravity and metallicity, so they do not substitute for the blindspot reconstruction.
+The clean-reference $R^{2}$ in Table~\ref{tab:downstream_logg} confirms that the fixed map extracts gravity-discriminating information on this BOSZ support. Against that reference, the blindspot row recovers most of the $\sigma_{\rm rob}$, MAE, and bias inflation that the noisy input introduces, while the smoother rows stay near the noisy-input scale. The reduction therefore tracks the line-preserving reconstructions of Section~\ref{sec:results_physical}, not generic noise removal.
 
-Surface gravity carries the dwarf--giant separation that selects faint Galactic Archaeology samples, so the $\log g$ row in Table~\ref{tab:downstream_logg} is the load-bearing audit for the downstream claim. The clean-reference $R^{2}$ confirms that the fixed map extracts gravity-discriminating information on this BOSZ support, against which the blindspot row recovers most of the scatter, MAE, and bias that the noisy input loses, while the smoother rows do not. The reduction therefore tracks the line-preserving reconstructions of Section~\ref{sec:results_physical}, not generic noise removal.
+Across the four BOSZ labels in Figure~\ref{fig:downstream_clean_domain_transfer}, the blindspot point sits below both the noisy point and the two classical smoother points at every label, and the same ordering holds across the five split seeds. The labels separate into an easier temperature/radial-velocity group and a harder gravity/metallicity group, matching the line-shape and line-strength sensitivity of these targets. The validation-tuned smoothers reduce scatter for some labels but stay close to the noisy-input scale for surface gravity and metallicity, so they do not substitute for the blindspot reconstruction.
 
-Refitting the same regressor at four calibrator-training sizes leaves this ordering unchanged: clean-input scatter improves monotonically with calibrator size, noisy and smoother rows stay flat at the noisy-input scale, and the blindspot row tracks the clean column at an approximately fixed offset (Appendix~\ref{app:downstream_logg}, Table~\ref{tab:downstream_logg_sweep}). The Table~\ref{tab:downstream_logg} numbers are not a special operating-point artefact.
+The blindspot row tracks the clean column at an approximately fixed offset across calibrator-training sizes, while noisy and smoother rows stay flat at the noisy-input scale (Appendix~\ref{app:downstream_logg}, Table~\ref{tab:downstream_logg_sweep}). The denoiser therefore aligns the noisy spectrum back to the calibrator's clean training distribution rather than rescaling it, and the Table~\ref{tab:downstream_logg} numbers are not a special operating-point artefact.
 
 \subsection{Line-preservation diagnostics}
 \label{sec:results_physical}
@@ -749,6 +749,10 @@ Worst of three families & $2.81\times10^{-4}$ & $1.00\times10^{-3}$ & $6.70\time
 \hline
 \end{tabular}
 \end{table}
+
+\paragraph{Heteroscedasticity and scalar $\gamma$.}
+\label{app:gamma_heteroscedasticity}
+The simulator draws $\epsilon_{\lambda}$ with the per-bin variance $\sigma_{\lambda}^{2}$ of Equation~\ref{eq:noise_components}, while the denoiser receives only the spectrum-level RMS noise condition $\bar{\sigma}$ of Equation~\ref{eq:blindspot_prediction}. The reported $\gamma$ values are therefore pixelwise residual-variance ratios summarized over wavelength, not a homoscedastic noise assumption. Windows whose variance profile differs from the spectrum-level summary are checked explicitly through the Ca\,\textsc{ii}, \mbox{O$_2$}, and TiO columns of Table~\ref{tab:gamma_full} and through the line-preservation diagnostics in Section~\ref{sec:results_physical}.
 
 \paragraph{Risk interpretation of $\gamma$.}
 \label{app:gamma_risk_interpretation}
