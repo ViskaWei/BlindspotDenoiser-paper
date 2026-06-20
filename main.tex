@@ -667,7 +667,7 @@ The blindspot construction implies that $\hat{x}_{\lambda}$ depends on the input
 Perturbation of $y_{i}$ & Pixels tested & Spectra & Max $|\Delta|$ \\
 \hline
 Cross-spectrum permutation & $3$ & $64$ & $1.79\times10^{-7}$ \\
-Per-spectrum mean replacement & $3$ & $64$ & $1.79\times10^{-7}$ \\
+Per-spectrum mean replacement & $3$ & $64$ & $2.09\times10^{-7}$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -678,7 +678,7 @@ Table~\ref{tab:training_signal_ablation} records the training-signal ablation re
 \begin{table}[htbp]
 \centering
 \small
-\caption{Ablation by training signal on the test split. Mean S/N is the linear per-spectrum reconstruction statistic in Equation~\ref{eq:snr_def} averaged over the $10000$ test spectra under the same evaluation protocol as Table~\ref{tab:main_baselines}. The Median S/N [$5\%, 95\%$] column reports the per-spectrum distribution over the same test spectra. The supervised U-Net row is a clean-target reference because it requires paired clean targets unavailable to a deployed self-supervised system.}
+\caption{Ablation by training signal on the test split. Mean S/N is the linear per-spectrum reconstruction statistic in Equation~\ref{eq:snr_def} averaged over $1000$ test spectra with $10$ noise realizations each, under the same evaluation protocol as Table~\ref{tab:main_baselines}. The Median S/N [$5\%, 95\%$] column reports the per-spectrum distribution over the same test spectra. The supervised U-Net row is a clean-target reference because it requires paired clean targets unavailable to a deployed self-supervised system.}
 \label{tab:training_signal_ablation}
 \begin{tabular}{llccc}
 \hline
