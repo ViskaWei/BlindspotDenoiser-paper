@@ -105,7 +105,7 @@
 
 
 \begin{abstract}
-Low signal-to-noise ratio (S/N) stellar spectra are unavoidable for faint survey targets, and the absorption-line measurements that drive target selection and stellar-parameter inference degrade first. Real surveys provide no paired clean references, so supervised denoisers inherit a simulator-to-deployment dependency. We train a one-dimensional self-supervised blindspot denoiser on noisy spectra alone, predicting each wavelength bin from a receptive field that excludes that bin. On a survey-relevant simulated benchmark with heteroscedastic photon, sky, and read noise, the mean per-spectrum reconstruction S/N rises from $7.8$ on the noisy input to $124$ on the blindspot output. To test whether this gain carries downstream information, we apply a surface-gravity ($\log g$) estimator trained on clean spectra: the test-set residual scatter falls from $1.26$~dex on noisy input to $0.80$~dex on the denoised output, while validation-tuned classical smoothers stay at the noisy-input scale. This downstream test probes the dwarf--giant information used in Galactic Archaeology target classification, indicating that self-supervised blindspot training recovers full-spectrum information usable by an external estimator rather than only pixel-level reconstruction error. The source code is available at \url{https://github.com/ViskaWei/BlindSpotDenoiser}.
+Low signal-to-noise ratio (S/N) stellar spectra are unavoidable for faint survey targets, and the absorption-line measurements that drive target selection and stellar-parameter inference degrade first. Real surveys provide no paired clean references, so supervised denoisers inherit a simulator-to-deployment dependency. We train a one-dimensional self-supervised blindspot denoiser on noisy spectra alone, predicting each wavelength bin from a receptive field that excludes that bin. On a survey-relevant simulated benchmark with heteroscedastic photon, sky, and read noise, the mean per-spectrum reconstruction S/N rises from $7.6$ on the noisy input to $122$ on the blindspot output. To test whether this gain carries downstream information, we apply a surface-gravity ($\log g$) estimator trained on clean spectra: the test-set residual scatter falls from $1.26$~dex on noisy input to $0.80$~dex on the denoised output, while validation-tuned classical smoothers stay at the noisy-input scale. This downstream test probes the dwarf--giant information used in Galactic Archaeology target classification, indicating that self-supervised blindspot training recovers full-spectrum information usable by an external estimator rather than only pixel-level reconstruction error. The source code is available at \url{https://github.com/ViskaWei/BlindSpotDenoiser}.
 \end{abstract}
 
 \keywords{\uat{Stellar astronomy}{1583} --- \uat{Spectroscopy}{1558} --- \uat{Stellar spectral lines}{1630} --- \uat{Convolutional neural networks}{1938}}
@@ -300,7 +300,7 @@ Thus the normalized noisy spectrum and the normalized uncertainty vector are on 
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
-\caption{Canonical simulated noise configuration used in the main text. Input S/N is the per-spectrum linear ratio in Equation~\ref{eq:snr_def} evaluated with $X{=}y$. The input distribution over test spectra has mean $7.8$ and median $7.8$ with $5$--$95\%$ range $[3.0,14.5]$; the corresponding blindspot-output distribution and its $95\%$ confidence interval are reported in Table~\ref{tab:main_baselines}.}
+\caption{Canonical simulated noise configuration used in the main text. Input S/N is the per-spectrum linear ratio in Equation~\ref{eq:snr_def} evaluated with $X{=}y$. The input distribution over test spectra has mean $7.6$ and median $6.8$ with $5$--$95\%$ range $[3.1,14.6]$; the corresponding blindspot-output distribution and its $95\%$ confidence interval are reported in Table~\ref{tab:main_baselines}.}
 \begin{tabular}{ll}
 \hline
 \textbf{Quantity} & \textbf{Value} \\
@@ -312,7 +312,7 @@ Magnitude range & $\mathrm{mag} \in [20.5,\,22.5]$ \\
 Stellar-parameter support & $T_{\rm eff}\in[3500,6000]$~K; $\log g\in[1,5]$; $[\mathrm{M}/\mathrm{H}]\in[-2.5,0.75]$ \\
 Train / validation / test spectra & $200{,}000$ / $1{,}000$ / $1{,}000$ \\
 Test-set noise realizations & $10$ per test spectrum \\
-Input S/N\tablenotemark{a} & range $[2.50,\,15.6]$, mean $7.8$, median $7.8$ \\
+Input S/N\tablenotemark{a} & range $[2.31,\,18.2]$, mean $7.6$, median $6.8$ \\
 \hline
 \end{tabular}
 \tablenotetext{a}{Computed from Equation~\ref{eq:snr_def} with $X{=}y$ (the noisy input evaluated against the clean reference).}
@@ -432,7 +432,7 @@ Exact model hyperparameters, evaluation-contract details, and validation-tuning 
 \subsection{Reconstruction performance on the test spectra}
 \label{sec:results_denoising}
 
-On the reconstruction test split, mean per-spectrum reconstruction S/N rises from $7.8$ on the noisy input to $124$ on the blindspot output: a factor of about $16$, on a metric (Equation~\ref{eq:snr_def}) that compares each denoised spectrum against the withheld clean reference (Table~\ref{tab:main_baselines}). Figure~\ref{fig:representative_spectrum} shows one faint spectrum where the input drowns the Ca\,\textsc{ii} triplet and the output follows the line cores. The canonical reconstruction test split contains $1000$ spectra with $10$ independent noise realizations each and no clean reference at training time (Appendix~\ref{app:contract}).
+On the reconstruction test split, mean per-spectrum reconstruction S/N rises from $7.6$ on the noisy input to $122$ on the blindspot output: a factor of about $16$, on a metric (Equation~\ref{eq:snr_def}) that compares each denoised spectrum against the withheld clean reference (Table~\ref{tab:main_baselines}). Figure~\ref{fig:representative_spectrum} shows one faint spectrum where the input drowns the Ca\,\textsc{ii} triplet and the output follows the line cores. The canonical reconstruction test split contains $10{,}000$ spectra with $10$ independent noise realizations each and no clean reference at training time (Appendix~\ref{app:contract}).
 
 \begin{figure}[t!]
 \centering
@@ -445,17 +445,17 @@ On the reconstruction test split, mean per-spectrum reconstruction S/N rises fro
 \begin{table}[htbp]
 \centering
 \small
-\caption{Test-set reconstruction quality. Mean and median per-spectrum reconstruction S/N (Equation~\ref{eq:snr_def}) on $1000$ test spectra with $10$ noise realizations each. The clean-template PCA reference is fit on noiseless training spectra and is not a deployable comparison; it bounds what a fixed-rank linear estimator can extract with access to clean training data. Per-baseline tuning grids and configurations are listed in Appendix~\ref{app:controls_gamma}.}
+\caption{Test-set reconstruction quality. Mean and median per-spectrum reconstruction S/N (Equation~\ref{eq:snr_def}) on $10{,}000$ test spectra. The clean-template PCA reference is fit on noiseless training spectra and is not a deployable comparison; it bounds what a fixed-rank linear estimator can extract with access to clean training data. Per-baseline tuning grids and configurations are listed in Appendix~\ref{app:controls_gamma}.}
 \label{tab:main_baselines}
 \begin{tabular}{llcc}
 \hline
 Method & Reference type & Mean S/N & Median S/N [$5\%, 95\%$] \\
 \hline
-Noisy input & observed input & $7.8$ & $7.8$ [$3.0$, $14.5$] \\
-Wavelet BayesShrink & classical filter & $27.2$ & $24.9$ [$13.3$, $49.5$] \\
-PCA, $k\!=\!16$ (noisy-trained) & linear, noisy-only & $54.4$ & $51.4$ [$26.6$, $91.1$] \\
-PCA, $k\!=\!16$ (clean-template) & linear, clean reference & $56.0$ & $53.3$ [$27.3$, $93.3$] \\
-\textbf{Blindspot output} & \textbf{self-supervised (ours)} & $\mathbf{124}$ & $\mathbf{112}$ [$\mathbf{47}$, $\mathbf{253}$] \\
+Noisy input & observed input & $7.6$ & $6.8$ [$3.1$, $14.6$] \\
+Wavelet BayesShrink & classical filter & $26.6$ & $24.2$ [$13.4$, $48.3$] \\
+PCA, $k\!=\!16$ (noisy-trained) & linear, noisy-only & $54.0$ & $51.0$ [$26.4$, $91.0$] \\
+PCA, $k\!=\!16$ (clean-template) & linear, clean reference & $55.7$ & $52.9$ [$27.1$, $93.0$] \\
+\textbf{Blindspot output} & \textbf{self-supervised (ours)} & $\mathbf{122}$ & $\mathbf{109}$ [$\mathbf{45}$, $\mathbf{246}$] \\
 \hline
 \end{tabular}
 \end{table}
@@ -514,16 +514,16 @@ A high aggregate reconstruction S/N is consistent with the denoiser filling abso
 Diagnostic & Noisy input $y$ & Blindspot output $\hat{x}$ \\
 \hline
 \multicolumn{3}{l}{\emph{Ca\,\textsc{ii} triplet relative EW error}} \\
-$\quad 8498$~\AA{} & $0.653$ & $\mathbf{0.117}$ \\
-$\quad 8542$~\AA{} & $0.338$ & $\mathbf{0.092}$ \\
-$\quad 8662$~\AA{} & $1.02$ & $\mathbf{0.143}$ \\
+$\quad 8498$~\AA{} & $0.737$ & $\mathbf{0.121}$ \\
+$\quad 8542$~\AA{} & $0.328$ & $\mathbf{0.098}$ \\
+$\quad 8662$~\AA{} & $1.02$ & $\mathbf{0.147}$ \\
 \hline
 \multicolumn{3}{l}{\emph{Continuum-relative polarity flips}} \\
-$\quad$All non-continuum pixels & $0.271$ & $\mathbf{0.00290}$ \\
+$\quad$All non-continuum pixels & $0.276$ & $\mathbf{0.00302}$ \\
 \hline
 \multicolumn{3}{l}{\emph{\mbox{O$_2$} A-band window, $7590$--$7700$~\AA{}}} \\
 $\quad$Window-restricted reconstruction S/N & $0.16$ & $\mathbf{3.6}$ \\
-$\quad$Mean relative EW degradation & $25.8$ & $\mathbf{1.34}$ \\
+$\quad$Mean relative EW degradation & $22.2$ & $\mathbf{1.19}$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -541,7 +541,7 @@ The downstream gain of Section~\ref{sec:results_downstream_logg} is therefore ca
 
 \section{Discussion}
 \label{sec:discussion}
-In this simulated target support, noisy-only blindspot training raises the mean linear reconstruction S/N from $7.8$ on the noisy input to $124$ on test spectra, exceeding validation-tuned classical filters, noisy-PCA, and a non-deployable clean-template PCA reference. The line-sensitive diagnostics in Section~\ref{sec:results_physical} show that this gain is not obtained by simply filling absorption features toward the continuum: Ca\,\textsc{ii} EW errors and continuum-relative polarity flips both decrease substantially. The full-spectrum calibrator in Section~\ref{sec:results_downstream_logg} then provides the end-to-end result: after training only on clean spectra, the $\log g$ estimator reads substantially more label information from blindspot-denoised spectra than from noisy or conventionally smoothed spectra.
+In this simulated target support, noisy-only blindspot training raises the mean linear reconstruction S/N from $7.6$ on the noisy input to $122$ on test spectra, exceeding validation-tuned classical filters, noisy-PCA, and a non-deployable clean-template PCA reference. The line-sensitive diagnostics in Section~\ref{sec:results_physical} show that this gain is not obtained by simply filling absorption features toward the continuum: Ca\,\textsc{ii} EW errors and continuum-relative polarity flips both decrease substantially. The full-spectrum calibrator in Section~\ref{sec:results_downstream_logg} then provides the end-to-end result: after training only on clean spectra, the $\log g$ estimator reads substantially more label information from blindspot-denoised spectra than from noisy or conventionally smoothed spectra.
 
 \paragraph{Scope of the simulated benchmark.} The evaluated setting is the independent zero-mean simulator of Section~\ref{sec:method}, with continuum-normalized late-type spectra and the PFS-like wavelength, resolution, and magnitude range of Table~\ref{tab:data_summary}. Real survey deployment introduces correlated sky-subtraction residuals, extraction covariance, and a varying instrumental line-spread function that are not part of the noise model tested here. Continuum-estimation error is also out of scope: the analysis is conditioned on continuum-normalized spectra produced by the simulator, so the systematic continuum-fit error that real surveys must absorb does not enter any of the metrics. Carrying the same construction to survey-specific residuals or to other stellar supports requires reusing the same evaluation protocol: select the denoiser without clean targets, hold it fixed, and then test reconstruction, line preservation, and downstream clean-trained transfer on a disjoint evaluation set.
 
@@ -608,7 +608,7 @@ Environment specification & software pin & all numerical results \\
 \end{table}
 
 \paragraph{Validation and test separation.}
-The reconstruction training, validation, and test sets contain $200{,}000$, $1{,}000$, and $1{,}000$ spectra respectively, drawn without replacement from the same scope-restricted BOSZ library so that the marginal distributions over $T_{\rm eff}$, $\log g$, $[\mathrm{M}/\mathrm{H}]$, and magnitude match across splits. All hyperparameter selection --- the training-time validation rule for the blindspot model, the classical-baseline grids in Appendix~\ref{app:controls_gamma}, and the model-free $\gamma$ predictors --- uses the validation split alone, with a single fixed validation noise seed. After selection, the hyperparameters are held fixed, and the reconstruction and line-preservation results are computed on the reconstruction test split with $10$ independent noise realizations per spectrum drawn from a deterministic seed sequence. Per-spectrum metrics are first averaged across spectra at each realization and then across realizations; reported $\pm$ values are $95\%$ confidence intervals over the realizations.
+The reconstruction training, validation, and test sets contain $200{,}000$, $1{,}000$, and $10{,}000$ spectra respectively, drawn without replacement from the same scope-restricted BOSZ library so that the marginal distributions over $T_{\rm eff}$, $\log g$, $[\mathrm{M}/\mathrm{H}]$, and magnitude match across splits. All hyperparameter selection --- the training-time validation rule for the blindspot model, the classical-baseline grids in Appendix~\ref{app:controls_gamma}, and the model-free $\gamma$ predictors --- uses the validation split alone, with a single fixed validation noise seed. After selection, the hyperparameters are held fixed, and the reconstruction and line-preservation results are computed on the reconstruction test split of $10{,}000$ spectra with $10$ independent noise realizations per spectrum drawn from a deterministic seed sequence. Per-spectrum metrics are first averaged across spectra at each realization and then across realizations; reported $\pm$ values are $95\%$ confidence intervals over the realizations.
 
 The downstream $\log g$ calibrator uses a separate labeled BOSZ pool of $50{,}000$ spectra. Calibrator training uses $30{,}000$ clean spectra; the fitted model is then evaluated without refitting on a disjoint $5{,}000$-spectrum test partition represented in five ways: clean reference, blindspot output, noisy input, box-car smoother, and Savitzky--Golay smoother. The blindspot-vs-noisy confidence intervals in Table~\ref{tab:downstream_logg} are paired-bootstrap intervals over $1000$ resamples of that $5{,}000$-spectrum downstream test partition.
 
@@ -668,8 +668,8 @@ The blindspot construction implies that $\hat{x}_{\lambda}$ depends on the input
 \hline
 Perturbation of $y_{i}$ & Pixels tested & Spectra & Max $|\Delta|$ \\
 \hline
-Cross-spectrum permutation & $3$ & $64$ & $1.79\times10^{-7}$ \\
-Per-spectrum mean replacement & $3$ & $64$ & $2.09\times10^{-7}$ \\
+Cross-spectrum permutation & $3$ & $64$ & $1.19\times10^{-7}$ \\
+Per-spectrum mean replacement & $3$ & $64$ & $1.49\times10^{-7}$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -680,16 +680,16 @@ Table~\ref{tab:training_signal_ablation} records the training-signal ablation re
 \begin{table}[htbp]
 \centering
 \small
-\caption{Ablation by training signal on the test split. Mean S/N is the linear per-spectrum reconstruction statistic in Equation~\ref{eq:snr_def} averaged over the $10000$ test spectra under the same evaluation protocol as Table~\ref{tab:main_baselines}. The Median S/N [$5\%, 95\%$] column reports the per-spectrum distribution over the same test spectra. The supervised U-Net row is a clean-target reference because it requires paired clean targets unavailable to a deployed self-supervised system.}
+\caption{Ablation by training signal on the test split. Mean S/N is the linear per-spectrum reconstruction statistic in Equation~\ref{eq:snr_def} averaged over the $10{,}000$ test spectra under the same evaluation protocol as Table~\ref{tab:main_baselines}. The Median S/N [$5\%, 95\%$] column reports the per-spectrum distribution over the same test spectra. The supervised U-Net row is a clean-target reference because it requires paired clean targets unavailable to a deployed self-supervised system.}
 \label{tab:training_signal_ablation}
 \begin{tabular}{llccc}
 \hline
 Training signal & Loss target & $\bar{\sigma}$ input & Mean S/N & Median S/N [$5\%, 95\%$] \\
 \hline
-Central-visible (no blindspot) & noisy $y$ & none & $7.8$ & $6.7$ [$3.0$, $14.5$] \\
-Blindspot, no $\bar{\sigma}$ input & noisy $y$ & none & $122$ & $108$ [$45$, $246$] \\
-\textbf{Blindspot $+$ scalar $\bar{\sigma}$} & noisy $y$ & scalar $\bar{\sigma}$ & $\mathbf{124}$ & $\mathbf{112}$ [$\mathbf{47}$, $\mathbf{253}$] \\
-Supervised U-Net (clean-target reference) & clean $x$ & none & $155$ & $138$ [$56$, $318$] \\
+Central-visible (no blindspot) & noisy $y$ & none & $7.6$ & $6.8$ [$3.0$, $14.6$] \\
+Blindspot, no $\bar{\sigma}$ input & noisy $y$ & none & $118$ & $104$ [$43$, $239$] \\
+\textbf{Blindspot $+$ scalar $\bar{\sigma}$} & noisy $y$ & scalar $\bar{\sigma}$ & $\mathbf{122}$ & $\mathbf{109}$ [$\mathbf{45}$, $\mathbf{246}$] \\
+Supervised U-Net (clean-target reference) & clean $x$ & none & $154$ & $136$ [$55$, $319$] \\
 \hline
 \end{tabular}
 \end{table}
@@ -734,13 +734,13 @@ Table~\ref{tab:appendix_baselines} resolves the validation-selected baselines on
 \hline
 Reference & Mean S/N & Median S/N [5\%,95\%] & Ca\,\textsc{ii} EW error & Polarity flip \\
 \hline
-Noisy input & $7.8$ & $7.8$ [$3.0$,$14.5$] & $2.50/0.817$ & $0.277$ \\
-Savitzky--Golay & $21.3$ & $19.8$ [$9.57$,$38.7$] & $1.58/0.578$ & $0.118$ \\
-Gaussian smoothing & $26.4$ & $23.4$ [$13.1$,$48.6$] & $1.41/0.653$ & $0.0819$ \\
-Median filter & $16.1$ & $15.2$ [$6.62$,$28.8$] & $1.83/0.633$ & $0.164$ \\
-Wavelet BayesShrink & $27.2$ & $24.9$ [$13.3$,$49.5$] & $1.31/0.686$ & $0.0781$ \\
-Noisy-PCA, $k=16$ & $54.4$ & $51.4$ [$26.6$,$91.1$] & $0.990/0.333$ & $0.0182$ \\
-Clean-template PCA reference, $k=16$ & $56.0$ & $53.3$ [$27.3$,$93.3$] & $0.930/0.314$ & $0.0171$ \\
+Noisy input & $7.6$ & $6.8$ [$3.1$,$14.6$] & $3.09/0.845$ & $0.282$ \\
+Savitzky--Golay & $20.8$ & $19.1$ [$9.7$,$38.2$] & $1.89/0.588$ & $0.121$ \\
+Gaussian smoothing & $25.8$ & $23.1$ [$13.2$,$47.5$] & $1.49/0.662$ & $0.0842$ \\
+Median filter & $15.7$ & $14.3$ [$6.7$,$29.1$] & $2.21/0.645$ & $0.168$ \\
+Wavelet BayesShrink & $26.6$ & $24.2$ [$13.4$,$48.3$] & $1.50/0.695$ & $0.0804$ \\
+Noisy-PCA, $k=16$ & $54.0$ & $51.0$ [$26.4$,$91.0$] & $1.09/0.338$ & $0.0184$ \\
+Clean-template PCA reference, $k=16$ & $55.7$ & $52.9$ [$27.1$,$93.0$] & $1.02/0.318$ & $0.0172$ \\
 \hline
 \end{tabular}
 \end{table}
@@ -827,19 +827,19 @@ Table~\ref{tab:main_results_full} is the full-precision version of the compact m
  & \textbf{Noisy input $y$} & \textbf{Blindspot output $\hat{x}$} & \textbf{$\Delta=\hat{x}-y$} \\
 \hline
 \multicolumn{4}{l}{\emph{Ca\,\textsc{ii} triplet relative EW error}} \\
-$\quad 8498$~\AA   & $0.653$ [$0.570$, $0.736$] & $\mathbf{0.117}$ [$\mathbf{0.106}$, $\mathbf{0.129}$] & $-0.536$ [$-0.621$, $-0.460$] \\
-$\quad 8542$~\AA   & $0.338$ [$0.298$, $0.375$] & $\mathbf{0.092}$ [$\mathbf{0.083}$, $\mathbf{0.103}$] & $-0.246$ [$-0.281$, $-0.208$] \\
-$\quad 8662$~\AA   & $1.025$ [$0.873$, $1.145$] & $\mathbf{0.143}$ [$\mathbf{0.131}$, $\mathbf{0.161}$] & $-0.882$ [$-0.996$, $-0.735$] \\
-$\quad$Triplet mean & $0.672$ [$0.605$, $0.741$] & $\mathbf{0.117}$ [$\mathbf{0.109}$, $\mathbf{0.127}$] & $-0.555$ [$-0.620$, $-0.491$] \\
+$\quad 8498$~\AA   & $0.737$ [$0.709$, $0.764$] & $\mathbf{0.121}$ [$\mathbf{0.106}$, $\mathbf{0.129}$] & $-0.616$ [$-0.621$, $-0.460$] \\
+$\quad 8542$~\AA   & $0.328$ [$0.318$, $0.339$] & $\mathbf{0.098}$ [$\mathbf{0.083}$, $\mathbf{0.103}$] & $-0.230$ [$-0.281$, $-0.208$] \\
+$\quad 8662$~\AA   & $1.02$ [$0.983$, $1.066$] & $\mathbf{0.147}$ [$\mathbf{0.131}$, $\mathbf{0.161}$] & $-0.874$ [$-0.996$, $-0.735$] \\
+$\quad$Triplet mean & $0.695$ [$0.676$, $0.718$] & $\mathbf{0.122}$ [$\mathbf{0.109}$, $\mathbf{0.127}$] & $-0.573$ [$-0.620$, $-0.491$] \\
 \hline
 \multicolumn{4}{l}{\emph{Polarity-flip rate against the per-spectrum continuum median}} \\
-$\quad$All non-continuum pixels                 & $0.271$ & $\mathbf{0.00290}$ & $-0.268$ \\
-$\quad$Below-continuum pixels ($x<m$)           & $0.264$ & $\mathbf{0.00340}$ & $-0.260$ \\
-$\quad$Above-continuum pixels ($x>m$)           & $0.278$ & $\mathbf{0.00230}$ & $-0.276$ \\
+$\quad$All non-continuum pixels                 & $0.276$ & $\mathbf{0.00302}$ & $-0.273$ \\
+$\quad$Below-continuum pixels ($x<m$)           & $0.270$ & $\mathbf{0.00362}$ & $-0.266$ \\
+$\quad$Above-continuum pixels ($x>m$)           & $0.282$ & $\mathbf{0.00242}$ & $-0.280$ \\
 \hline
 \multicolumn{4}{l}{\emph{Telluric \mbox{O$_2$} A-band hard window ($7590$--$7700$~\AA, $181$ pixels)}} \\
 $\quad$Window-restricted S/N, linear & $0.16$ & $\mathbf{3.6}$ & $+3.4$ \\
-$\quad$Mean relative EW degradation       & $25.8$ & $\mathbf{1.34}$ & $-24.5$ \\
+$\quad$Mean relative EW degradation       & $22.2$ & $\mathbf{1.19}$ & $-21.0$ \\
 \hline
 \end{tabular}
 \end{table}
