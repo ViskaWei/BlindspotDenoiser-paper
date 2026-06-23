@@ -1,7 +1,7 @@
 paper_id: blindspotdenoiser
 section_keyword: results
 field: astro
-source_sha: d2dc15fa666b21d4
+source_sha: 21f7b30b2953597d
 voice_contract:
   mode: archival
   lead_with: finding
@@ -37,7 +37,7 @@ subsections:
     role: finding_update
     hero_claim_id: C1
     answers_question: |
-      Does noisy-only blindspot training raise reconstruction S/N on a frozen low-S/N benchmark above what validation-tuned classical filters and noisy-PCA can reach?
+      Does noisy-only blindspot training beat tuned classical and linear baselines by a wide margin, recover most of the supervised clean-target ceiling without ever seeing a clean spectrum, and do so by genuine line recovery rather than oversmoothing?
     evidence_artifacts:
       figures:
         - fig:representative_spectrum
@@ -46,10 +46,11 @@ subsections:
         - tab:main_baselines
       numbers:
         - 7.6
-        - 122
         - 26.6
-        - 54.0
         - 55.7
+        - 118
+        - 122
+        - 154
     forbidden_content:
       - setup
       - motivation
@@ -73,7 +74,7 @@ subsections:
       - paragraph_id: results-1-reconstruction-performance-on-the-test-spectra.p2
         section_id: results-1-reconstruction-performance-on-the-test-spectra
         reader_question: |
-          Could the gain be explained by importing clean targets, by tuning a smoother, or by linear projection?
+          What does the ablation ladder isolate: that the gain needs the blindspot exclusion (central-visible collapses to the noisy scale) and not the scalar noise input (118 to 122), that the self-supervised 122 recovers most of the supervised ceiling of 154 without clean data, that even a clean-template PCA caps at 55.7 so the gain is not clean-data access, and that line preservation rules out oversmoothing?
         role: scope_boundary
         claim_id: C1
         evidence_id: sec:results_denoising
@@ -217,7 +218,7 @@ display_plan:
   - display_id: tab:main_baselines
     kind: table
     subsection_id: results-1-reconstruction-performance-on-the-test-spectra
-    function: test-set reconstruction-S/N comparison against classical and PCA references
+    function: ablation ladder - noisy input, classical and linear baselines, blindspot with and without the scalar noise condition, and a supervised clean-target ceiling
   - display_id: sec:results_downstream_logg
     kind: display
     subsection_id: results-2-downstream-clean-trained-calibrator-transfer
@@ -251,9 +252,9 @@ claim_chain:
   - claim_id: C1
     evidence_id: sec:results_denoising
     rules_out: |
-      The gain is not explained by importing clean training targets (clean-template PCA stays at 56.0), by tuning a conventional smoother (Wavelet BayesShrink stays at 27.2), or by a fixed-rank linear reconstruction (noisy-PCA k=16 stays at 54.4).
+      The gain is not explained by importing clean training targets (clean-template PCA caps at 55.7), by tuning a conventional smoother (Wavelet BayesShrink caps at 26.6), or by the scalar noise input (blindspot without it already reaches 118 of 122). The supervised clean-target U-Net reaches 154, so the self-supervised blindspot recovers most of the paired-data ceiling at 122 without any clean spectrum; a central-visible control collapses to the noisy-input scale (7.6), so the gain requires the blindspot exclusion.
     scope_limit: |
-      Held-out canonical reconstruction split: 1000 BOSZ/PFS-like late-type spectra at mag 20.5-22.5 with 10 independent zero-mean per-pixel noise realizations each.
+      Held-out reconstruction test split of 10,000 BOSZ/PFS-like late-type spectra at mag 20.5-22.5 with one independent zero-mean per-pixel noise realization each; clean-template PCA and supervised U-Net are non-deployable references with clean-data access.
   - claim_id: C2
     evidence_id: sec:results_downstream_logg
     rules_out: |
