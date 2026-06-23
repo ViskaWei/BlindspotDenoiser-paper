@@ -1,7 +1,7 @@
 paper_id: blindspotdenoiser
 section_keyword: results
 field: astro
-source_sha: 21f7b30b2953597d
+source_sha: f239c2bb186571db
 voice_contract:
   mode: archival
   lead_with: finding
@@ -46,7 +46,6 @@ subsections:
         - tab:main_baselines
       numbers:
         - 7.6
-        - 26.6
         - 55.7
         - 118
         - 122

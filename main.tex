@@ -446,14 +446,13 @@ On the reconstruction test split, mean per-spectrum reconstruction S/N rises fro
 \begin{table}[htbp]
 \centering
 \small
-\caption{Test-set reconstruction quality on $10{,}000$ test spectra (mean and median per-spectrum reconstruction S/N, Equation~\ref{eq:snr_def}). Rows group the observed input, validation-tuned classical and linear baselines, the self-supervised blindspot with and without the scalar noise condition $\bar{\sigma}$, and a supervised clean-target reference. The clean-template PCA and supervised U-Net rows are fit with access to clean spectra and are not deployable comparisons; they bound the linear estimator class and the paired-data ceiling respectively. Baseline tuning grids and the noisy-trained PCA are listed in Appendix~\ref{app:controls_gamma}; the central-visible copy-shortcut control is in Appendix~\ref{app:architecture_integrity}.}
+\caption{Test-set reconstruction quality on $10{,}000$ test spectra (mean and median per-spectrum reconstruction S/N, Equation~\ref{eq:snr_def}). Rows group the observed input, a validation-tuned clean-template PCA reference, the self-supervised blindspot with and without the scalar noise condition $\bar{\sigma}$, and a supervised clean-target reference. The clean-template PCA and supervised U-Net rows are fit with access to clean spectra and are not deployable comparisons; they bound the linear estimator class and the paired-data ceiling respectively. Baseline tuning grids and the noisy-trained PCA are listed in Appendix~\ref{app:controls_gamma}; the central-visible copy-shortcut control is in Appendix~\ref{app:architecture_integrity}.}
 \label{tab:main_baselines}
 \begin{tabular}{llcc}
 \hline
 Method & Reference type & Mean S/N & Median S/N [$5\%, 95\%$] \\
 \hline
 Noisy input & observed input & $7.6$ & $6.8$ [$3.1$, $14.6$] \\
-Wavelet BayesShrink & classical filter & $26.6$ & $24.2$ [$13.4$, $48.3$] \\
 PCA, $k\!=\!16$ (clean-template) & linear, clean reference & $55.7$ & $52.9$ [$27.1$, $93.0$] \\
 Blindspot, no $\bar{\sigma}$ & self-supervised & $118$ & $104$ [$43$, $239$] \\
 \textbf{Blindspot $+$ $\bar{\sigma}$ (ours)} & \textbf{self-supervised} & $\mathbf{122}$ & $\mathbf{109}$ [$\mathbf{45}$, $\mathbf{246}$] \\
