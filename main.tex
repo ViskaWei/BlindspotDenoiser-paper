@@ -466,36 +466,35 @@ The ablation rows isolate where the gain comes from. A central-visible control t
 \subsection{Downstream clean-trained calibrator transfer}
 \label{sec:results_downstream_logg}
 
-A pixel-level reconstruction gain is useful for Galactic Archaeology only if the denoised spectrum still feeds an estimator that was trained on clean inputs. Surface gravity carries the dwarf--giant separation that selects faint Galactic Archaeology samples; the downstream test therefore uses a $\log g$ calibrator trained only on clean spectra and applied unchanged to the denoised reconstructions. We hold the full-spectrum calibrator of Section~\ref{sec:implementation} fixed and feed it five representations of the same reconstruction test spectra: clean reference, blindspot output $\hat{x}$, noisy input $y$, validation-tuned box-car smoother, and validation-tuned Savitzky--Golay smoother. The calibrator is tested on a disjoint $5{,}000$-spectrum BOSZ partition (Appendix~\ref{app:contract}). The clean-reference row is an upper bound under this fixed map, not a deployable comparison.
+A pixel-level reconstruction gain is useful for Galactic Archaeology only if the denoised spectrum still feeds an estimator that was trained on clean inputs. Surface gravity carries the dwarf--giant separation that selects faint Galactic Archaeology samples; the downstream test therefore uses a $\log g$ calibrator trained only on clean spectra and applied unchanged to the denoised reconstructions. We hold the full-spectrum calibrator of Section~\ref{sec:implementation} fixed and feed it four representations of the same reconstruction test spectra: clean reference, blindspot output $\hat{x}$, noisy input $y$, and a validation-tuned Savitzky--Golay smoother. The calibrator is tested on a disjoint $5{,}000$-spectrum BOSZ partition (Appendix~\ref{app:contract}). The clean-reference row is an upper bound under this fixed map, not a deployable comparison.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{figs/fig4_downstream_clean_domain_transfer.pdf}
-\caption{Clean-trained downstream calibration after denoising. Full-spectrum LightGBM calibrators are trained only on clean spectra and then evaluated, without refitting, on the same test spectra represented as clean inputs, blindspot outputs, box-car smooths, Savitzky--Golay smooths, or noisy inputs. \textbf{Left:} centered robust-scatter ratio relative to the noisy input at $n_{\rm train}=30{,}000$ for four BOSZ labels; small points are five random splits, large markers are split means, and bars are split standard deviations. \textbf{Right:} residual distributions for the $\log g$ evaluation on the $5{,}000$-spectrum test partition in Table~\ref{tab:downstream_logg}. Side labels report $\mu$ (mean bias) and $\sigma$ (centered robust scatter) in dex.}
+\caption{Clean-trained downstream calibration after denoising. Full-spectrum LightGBM calibrators are trained only on clean spectra and then evaluated, without refitting, on the same test spectra represented as clean inputs, blindspot outputs, Savitzky--Golay smooths, or noisy inputs. \textbf{Left:} centered robust-scatter ratio relative to the noisy input at $n_{\rm train}=30{,}000$ for four BOSZ labels; small points are five random splits, large markers are split means, and bars are split standard deviations. \textbf{Right:} residual distributions for the $\log g$ evaluation on the $5{,}000$-spectrum test partition in Table~\ref{tab:downstream_logg}. Side labels report $\mu$ (mean bias) and $\sigma$ (centered robust scatter) in dex.}
 \label{fig:downstream_clean_domain_transfer}
 \end{figure}
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Clean-trained $\log g$ estimator on five reconstruction inputs, evaluated without refitting on $5{,}000$ test spectra. $\sigma_{\rm rob}$ is the centered Gaussian-equivalent dispersion of the residual $\widehat{\log g}-\log g_{\rm true}$; MAE and bias are the mean absolute and mean signed residuals; $R^{2}$ is the coefficient of determination. The clean-input row is an upper reference under the fixed mapping. Paired-bootstrap $95\%$ confidence intervals over $1000$ resamples on the blindspot-vs-noisy ratios are $\sigma_{\rm rob}$-ratio $0.64$ $[0.61,\,0.66]$ and MAE-ratio $0.70$ $[0.68,\,0.72]$.}
+\caption{Clean-trained $\log g$ estimator on four reconstruction inputs, evaluated without refitting on $5{,}000$ test spectra. $\sigma_{\rm rob}$ is the centered Gaussian-equivalent dispersion of the residual $\widehat{\log g}-\log g_{\rm true}$; MAE and bias are the mean absolute and mean signed residuals; $R^{2}$ is the coefficient of determination. The clean-input row is an upper reference under the fixed mapping. Paired-bootstrap $95\%$ confidence intervals over $1000$ resamples on the blindspot-vs-noisy ratios are $\sigma_{\rm rob}$-ratio $0.64$ $[0.61,\,0.66]$ and MAE-ratio $0.70$ $[0.68,\,0.72]$.}
 \label{tab:downstream_logg}
 \begin{tabular}{lcccc}
 \hline
 Input spectrum & $\sigma_{\rm rob}$ [dex] & MAE [dex] & Bias [dex] & $R^{2}$ \\
 \hline
-Clean input (upper reference)         & $0.22$ & $0.21$ & $+0.001$ & $0.94$ \\
+Clean input (upper reference)         & $0.22$ & $0.20$ & $+0.001$ & $0.94$ \\
 \textbf{Blindspot output (ours)}      & $\mathbf{0.80}$ & $\mathbf{0.67}$ & $\mathbf{+0.020}$ & $\mathbf{0.46}$ \\
-Box-car smoother (val.\ tuned)        & $1.09$ & $0.87$ & $-0.086$ & $0.14$ \\
-Savitzky--Golay smoother (val.\ tuned)& $1.09$ & $0.87$ & $-0.089$ & $0.13$ \\
+Savitzky--Golay smoother (val.\ tuned)& $1.11$ & $0.88$ & $-0.078$ & $0.10$ \\
 Noisy input                           & $1.26$ & $0.96$ & $-0.170$ & $0.01$ \\
 \hline
 \end{tabular}
 \end{table}
 
-The clean-reference $R^{2}$ in Table~\ref{tab:downstream_logg} establishes that the fixed map extracts gravity-discriminating information on this BOSZ support. The blindspot row inherits that information channel: scatter, mean absolute error, and systematic bias all move from the noisy-input scale toward the clean-reference scale, while validation-tuned smoothers in the same configuration stay near the noisy-input scale across the metrics. The bias row makes the contrast sharpest: blindspot output nearly removes the noisy systematic offset (\mbox{$+0.02$} versus $-0.17$~dex), while the smoothers remain offset at about $-0.09$~dex. The reduction therefore tracks the line-preserving reconstructions of Section~\ref{sec:results_physical}, not generic noise removal.
+The clean-reference $R^{2}$ in Table~\ref{tab:downstream_logg} establishes that the fixed map extracts gravity-discriminating information on this BOSZ support. The blindspot row inherits that information channel: scatter, mean absolute error, and systematic bias all move from the noisy-input scale toward the clean-reference scale, while the validation-tuned Savitzky--Golay smoother in the same configuration stays near the noisy-input scale across the metrics. The bias row makes the contrast sharpest: blindspot output nearly removes the noisy systematic offset (\mbox{$+0.02$} versus $-0.17$~dex), while the smoother remains offset at about $-0.08$~dex. The reduction therefore tracks the line-preserving reconstructions of Section~\ref{sec:results_physical}, not generic noise removal.
 
-Across the four BOSZ labels in Figure~\ref{fig:downstream_clean_domain_transfer}, the blindspot point sits below both the noisy point and the two classical smoother points at every label, and the same ordering holds across the five split seeds. The labels separate into an easier temperature/radial-velocity group and a harder gravity/metallicity group, matching the line-shape and line-strength sensitivity of these targets. The validation-tuned smoothers reduce scatter for some labels but stay close to the noisy-input scale for surface gravity and metallicity, so they do not substitute for the blindspot reconstruction.
+Across the four BOSZ labels in Figure~\ref{fig:downstream_clean_domain_transfer}, the blindspot point sits below both the noisy point and the classical smoother point at every label, and the same ordering holds across the five split seeds. The labels separate into an easier temperature/radial-velocity group and a harder gravity/metallicity group, matching the line-shape and line-strength sensitivity of these targets. The validation-tuned smoother reduces scatter for some labels but stays close to the noisy-input scale for surface gravity and metallicity, so it does not substitute for the blindspot reconstruction.
 
 The blindspot row tracks the clean column at an approximately fixed offset across calibrator-training sizes, while noisy and smoother rows stay flat at the noisy-input scale (Appendix~\ref{app:downstream_logg}, Table~\ref{tab:downstream_logg_sweep}). The denoiser therefore moves the noisy spectrum toward the calibrator's clean-input feature manifold rather than merely rescaling it, and the Table~\ref{tab:downstream_logg} numbers are not a special operating-point artefact.
 
@@ -613,7 +612,7 @@ Environment specification & software pin & all numerical results \\
 \paragraph{Validation and test separation.}
 The reconstruction training, validation, and test sets contain $200{,}000$, $1{,}000$, and $10{,}000$ spectra respectively, drawn without replacement from the same scope-restricted BOSZ library so that the marginal distributions over $T_{\rm eff}$, $\log g$, $[\mathrm{M}/\mathrm{H}]$, and magnitude match across splits. All hyperparameter selection --- the training-time validation rule for the blindspot model, the classical-baseline grids in Appendix~\ref{app:controls_gamma}, and the model-free $\gamma$ predictors --- uses the validation split alone, with a single fixed validation noise seed. After selection, the hyperparameters are held fixed, and the reconstruction and line-preservation results are computed on the reconstruction test split of $10{,}000$ spectra with one noise realization per spectrum. Reported intervals for the Ca\,\textsc{ii} equivalent-width rows are paired-bootstrap intervals over test spectra.
 
-The downstream $\log g$ calibrator uses a separate labeled BOSZ pool of $50{,}000$ spectra. Calibrator training uses $30{,}000$ clean spectra; the fitted model is then evaluated without refitting on a disjoint $5{,}000$-spectrum test partition represented in five ways: clean reference, blindspot output, noisy input, box-car smoother, and Savitzky--Golay smoother. The blindspot-vs-noisy confidence intervals in Table~\ref{tab:downstream_logg} are paired-bootstrap intervals over $1000$ resamples of that $5{,}000$-spectrum downstream test partition.
+The downstream $\log g$ calibrator uses a separate labeled BOSZ pool of $50{,}000$ spectra. Calibrator training uses $30{,}000$ clean spectra; the fitted model is then evaluated without refitting on a disjoint $5{,}000$-spectrum test partition represented in four ways: clean reference, blindspot output, noisy input, and a Savitzky--Golay smoother. The blindspot-vs-noisy confidence intervals in Table~\ref{tab:downstream_logg} are paired-bootstrap intervals over $1000$ resamples of that $5{,}000$-spectrum downstream test partition.
 
 \paragraph{Software environment.}
 A dependency manifest and a container recipe are pinned in the archived release, so that the metric module, simulator, and inference script execute against the same software stack used to generate the reported numbers.
@@ -862,14 +861,14 @@ This appendix provides the train-size stability check referenced in Section~\ref
 \small
 \caption{Train-size stability of the $\log g$ calibrator. Each entry is the centered robust scatter $\sigma_{\rm rob}$ [dex] of the residual $\widehat{\log g}-\log g_{\rm true}$ on the same $5{,}000$-spectrum test set used in Table~\ref{tab:downstream_logg}. Smaller is better. The clean-input column improves monotonically with calibrator-training size; the noisy and smoothed columns remain at the noisy-input scale; the blindspot column tracks the clean column at an approximately constant offset.}
 \label{tab:downstream_logg_sweep}
-\begin{tabular}{rccccc}
+\begin{tabular}{rcccc}
 \hline
-$n_{\rm train}$ & Clean & Blindspot & Box-car & Savitzky--Golay & Noisy \\
+$n_{\rm train}$ & Clean & Blindspot & Savitzky--Golay & Noisy \\
 \hline
-$1{,}000$  & $0.68$ & $1.02$ & $1.18$ & $1.17$ & $1.32$ \\
-$3{,}000$  & $0.39$ & $0.90$ & $1.11$ & $1.11$ & $1.29$ \\
-$10{,}000$ & $0.27$ & $0.83$ & $1.08$ & $1.09$ & $1.28$ \\
-$30{,}000$ & $0.22$ & $0.80$ & $1.09$ & $1.09$ & $1.26$ \\
+$1{,}000$  & $0.68$ & $1.02$ & $1.12$ & $1.32$ \\
+$3{,}000$  & $0.39$ & $0.90$ & $1.10$ & $1.29$ \\
+$10{,}000$ & $0.27$ & $0.83$ & $1.09$ & $1.28$ \\
+$30{,}000$ & $0.22$ & $0.80$ & $1.11$ & $1.26$ \\
 \hline
 \end{tabular}
 \end{table}
