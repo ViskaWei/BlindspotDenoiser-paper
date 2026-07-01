@@ -105,16 +105,16 @@
 \email[show]{xzhao113@jhu.edu}
 
 \begin{abstract}
-Analyzing stellar spectra observed with at low signal-to-noise ratios (S/N) is unavoidable when survey targets are faint. Absorption-line measurements that determine stellar-parameter inference and target identification degrade first. Real surveys provide no paired clean references for machine learning, so supervised denoisers inherit a simulator-to-deployment dependency. We train a one-dimensional self-supervised blindspot denoiser on noisy spectra alone, predicting each wavelength bin from a receptive field that excludes that bin. On a survey-relevant simulated benchmark with heteroscedastic photon, sky, and read-out noise, the mean per-spectrum reconstruction error (RMSE) falls by about a factor of $16$ from the noisy input to the blindspot output. To test whether this gain carries downstream information, we apply a surface gravity ($\log g$) estimator trained on clean synthetic spectra: the test set residual scatter falls from $1.26$~dex on noisy input to $0.80$~dex on the denoised output. As a comparison, validation-tuned classical smoothers stay at the noisy-input scale. This downstream test probes the information used for dwarf--giant  target classification, paramount in Galactic Archaeology, indicating that the self-supervised blindspot method recovers real information from the spectrum and denoised spectra are usable as input to traditional parameter estimation methods rather than only pixel-level reconstructions. The source code is publicly available on Github\footnote{\url{https://github.com/ViskaWei/BlindSpotDenoiser}}.
+Analyzing stellar spectra observed with at low signal-to-noise ratios (S/N) is unavoidable when survey targets are faint. Absorption-line measurements that determine stellar-parameter inference and target identification degrade first. Real surveys provide no paired clean references for machine learning, so supervised denoisers inherit a simulator-to-deployment dependency. We train a one-dimensional self-supervised blindspot denoiser on noisy spectra alone, predicting each wavelength bin from a receptive field that excludes that bin. On a survey-relevant simulated benchmark with heteroscedastic photon, sky, and read-out noise, the mean per-spectrum reconstruction error (RMSE) falls by about a factor of $16$ from the noisy input to the blindspot output. To test whether this gain carries downstream information, we apply a surface gravity ($\log g$) estimator trained on clean synthetic spectra: the test set residual scatter falls from $1.26$~dex on noisy input to $0.80$~dex on the denoised output. As a comparison, validation-tuned classical smoothers stay at the noisy-input scale. This downstream test probes the information used for dwarf--giant  target classification, paramount in Galactic Archaeology, indicating that the self-supervised blindspot method improves an external estimator's access to surface-gravity signal in the full flux vector rather than merely lowering pixel-level reconstruction error. The source code is publicly available on Github\footnote{\url{https://github.com/ViskaWei/BlindSpotDenoiser}}.
 \end{abstract}
 
 \keywords{\uat{Stellar astronomy}{1583} --- \uat{Spectroscopy}{1558} --- \uat{Stellar spectral lines}{1630} --- \uat{Convolutional neural networks}{1938}}
 
 \section{Introduction}
 \label{sec:introduction}
-Galactic Archaeology analyses stellar spectra by measuring radial velocities, atmospheric parameters, and elemental abundances that trace the formation and evolution of stellar populations. Large multiplexed surveys of resolved stars typically pre-select targets from imaging catalogs before their membership can be confirmed spectroscopically \citep{Dey2019_LegacySurveys,Majewski2017_APOGEE}, so many faint members of the resulting samples are observed near the low signal-to-noise ratio (S/N) limit, where indiviual line measurements become fragile. Low signal-to-noise spectra directly limit target triage, follow-up strategy, and the scientific yield of the instrument. The effective signal-to-noise of the observations is further degraded by structured night-sky emission and wavelength-dependent atmospheric absorption \citep{Osterbrock1996_SkyAtlas,Hanuschik2003_SkyAtlas,Noll2012_ParanalSky}, both of which sit on top of the photon-noise floor that ultimately limits the recovery of the narrow absorption line features that carry the astrophysically useful information \citep{Bouchy2001_RVLimit}. A denoiser is useful at these S/N levels only if it raises the per-spectrum reconstruction signal-to-noise without erasing those line features; line preservation therefore frames the rest of this paper. Among the stellar labels, surface gravity is the most direct dwarf--giant discriminator and drives target membership decisions for faint Galactic Archaeology samples; surface gravity is therefore the downstream label tested in Section~\ref{sec:results_downstream_logg}.
+Galactic Archaeology analyses stellar spectra by measuring radial velocities, atmospheric parameters, and elemental abundances that trace the formation and evolution of stellar populations. Large multiplexed surveys of resolved stars typically pre-select targets from imaging catalogs before their membership can be confirmed spectroscopically \citep{Dey2019_LegacySurveys,Majewski2017_APOGEE}, so many faint members of the resulting samples are observed near the low signal-to-noise ratio (S/N) limit, where indiviual line measurements become fragile. Low signal-to-noise spectra directly limit target triage, follow-up strategy, and the scientific yield of the instrument. The effective signal-to-noise of the observations is further degraded by structured night-sky emission and wavelength-dependent atmospheric absorption \citep{Osterbrock1996_SkyAtlas,Hanuschik2003_SkyAtlas,Noll2012_ParanalSky}, both of which sit on top of the photon-noise floor that ultimately limits the recovery of the narrow absorption line features that carry the astrophysically useful information \citep{Bouchy2001_RVLimit}. A denoiser is useful at these S/N levels only if it reduces reconstruction error without erasing those line features; line preservation therefore frames the rest of this paper. Among the stellar labels, surface gravity is the most direct dwarf--giant discriminator and drives target membership decisions for faint Galactic Archaeology samples; surface gravity is therefore the downstream label tested in Section~\ref{sec:results_downstream_logg}.
 
-The main obstacle for deep-learning-based denoising in the low-S/N range is not neural network architecture, but the source of supervision. At the apparent magnitudes targeted here, real surveys do not provide noise-free spectra paired with every low-S/N exposure. Paired short exposures and deeper coadds can provide approximate noisy--less-noisy supervision when repeated observations exist, but such coadds are not clean references and are not available as a universal training target. A fully supervised denoiser therefore still typically depends on synthetic noisy--clean pairs and inherits a simulator-to-deployment dependency \citep{Pal2024_denoising_autoencoder}. Classical template-fitting methods and label models trained to obtain physical parameters match observed spectra against synthetic libraries and inherit the coverage limits of those libraries \citep{Koleva2009_ULySS,Ting2019_Payne}, while data-driven label models such as \textit{The Cannon} replace the synthetic library with labeled reference stars that span the target label space \citep{Ness2015_Cannon}. Each of these approaches relies, in a different way, on information that is not directly available from the noisy spectrum alone. A noisy-only training strategy, that requires neither clean targets nor a strong external prior, is the alternative this paper tests --- conditional on raising reconstruction S/N without erasing the line structure that later analyses depend on. Whether blindspot prediction in the low-S/N stellar range tracks those line features, rather than smoothing them toward the local average, is the question this paper addresses.
+The main obstacle for deep-learning-based denoising in the low-S/N range is not neural network architecture, but the source of supervision. At the apparent magnitudes targeted here, real surveys do not provide noise-free spectra paired with every low-S/N exposure. Paired short exposures and deeper coadds can provide approximate noisy--less-noisy supervision when repeated observations exist, but such coadds are not clean references and are not available as a universal training target. A fully supervised denoiser therefore still typically depends on synthetic noisy--clean pairs and inherits a simulator-to-deployment dependency \citep{Pal2024_denoising_autoencoder}. Classical template-fitting methods and label models trained to obtain physical parameters match observed spectra against synthetic libraries and inherit the coverage limits of those libraries \citep{Koleva2009_ULySS,Ting2019_Payne}, while data-driven label models such as \textit{The Cannon} replace the synthetic library with labeled reference stars that span the target label space \citep{Ness2015_Cannon}. Each of these approaches relies, in a different way, on information that is not directly available from the noisy spectrum alone. A noisy-only training strategy, that requires neither clean targets nor a strong external prior, is the alternative this paper tests --- conditional on reducing reconstruction error without erasing the line structure that later analyses depend on. Whether blindspot prediction in the low-S/N stellar range tracks those line features, rather than smoothing them toward the local average, is the question this paper addresses.
 
 Self-supervised denoising reduces this dependency by using the noise statistics of the observations instead of externally supplied clean spectra. If two independent, noisy observations of the same star have zero-mean errors, then averaging over the noisy targets recovers the same underlying spectrum in expectation \citep{lehtinen2018noise2noise}. Blindspot training replaces the second exposure by withholding the target wavelength bin and predicting its flux from the neighboring wavelength bins, so that the network cannot simply copy the noisy value \citep{batson2019noise2self,Krull2019_blindspot,Laine2019_BSN}. For spectra, this independence assumption must be stated in detector terms. The flux values are correlated among spectral pixels both because a stellar spectrum has continuum and line structure and because the instrumental line-spread function spreads light over neighboring bins, but the independence assumption holds about the noise, i.e. photon noise, read-out noise and thermal contributions are considered to be drawn independently for each detector pixel before removal of instrumental characteristics, sky subtraction, 1D spectrum extraction and fluxing. While data reduction steps usually introduce some correlation between neighboring pixels, we assume complete independence of the noise when generating the simulated training data.
 
@@ -162,7 +162,7 @@ Thus, the normalized noisy spectrum and the normalized uncertainty vector are on
     \centering
     \small
     \setlength{\tabcolsep}{4pt}
-    \caption{Paramaters of the ensemble of simulated spectra used in the main text. Input S/N is the per-spectrum linear ratio in Equation~\ref{eq:snr_def} evaluated with $X{=}y$. The distribution of S/N over the test spectra has a mean of $7.6$ and median of $6.8$ with a $5$--$95\%$ range of $[3.1,14.6]$. The corresponding blindspot-output reconstruction error (RMSE) is reported in Table~\ref{tab:main_baselines}.}
+    \caption{Paramaters of the ensemble of simulated spectra used in the main text. Input S/N summarizes the simulated noisy observations before denoising. The distribution over the test spectra has a mean of $7.6$ and median of $6.8$ with a $5$--$95\%$ range of $[3.1,14.6]$. The corresponding blindspot-output reconstruction error (RMSE) is reported in Table~\ref{tab:main_baselines}.}
     \begin{tabular}{ll}
     \hline
     \textbf{Quantity} & \textbf{Value} \\
@@ -180,7 +180,6 @@ Thus, the normalized noisy spectrum and the normalized uncertainty vector are on
     & range $[2.31,\,18.2]$, mean $7.6$, median $6.8$ \\
     \hline
     \end{tabular}
-    %\tablenotetext{a}{Computed from Equation~\ref{eq:snr_def} with $X{=}y$ (the noisy input evaluated against the clean reference).}
     \label{tab:data_summary}
 \end{table*}
 
@@ -197,7 +196,9 @@ The observation simulator outputs the wavelength grid, continuum-normalized clea
     \label{eq:noise_components}
 \end{equation}
 where each term is normalized with the same continuum.
-The three terms encode noise from object photons, photon noise from the structured sky background, and detector read and dark noise as transfered by the telescope and the detector. We note, that $\sigma_{\mathrm{obj},\lambda}^2$ is a deterministic function of the clean flux $x$, hence the full, pixel-wise $\sigma_{\lambda}$ profile is used only to draw $\epsilon_{\lambda}$ in Equation~\ref{eq:noise_model_scalar}. The variance vector is never fed into the denoiser directly, because it would leak information about the clean flux into the network. The network receives only the scalar noise summary $\bar{\sigma}$, as defined in Equation~\ref{eq:blindspot_prediction}. The clean reference $x$ is completely withheld during training and used only for evaluation.
+The three terms encode noise from object photons, photon noise from the structured sky background, and detector read and dark noise as transfered by the telescope and the detector.
+
+We note, that in our simulations, $\sigma_{\mathrm{obj},\lambda}^2$ is a deterministic function of the clean flux $x$ which can have implications for the training of the blindspot denoiser when $\sigma_{\lambda}$ is used as input.
 
 \subsection{Problem Formulation and Blindspot Objective}
 \label{sec:problem_formulation}
@@ -211,6 +212,13 @@ Let $x\in\mathbb{R}^{N}$ be a clean spectrum and $y\in\mathbb{R}^{N}$ its noisy 
 where $\lambda = 1,2,\dots, N$ indexes the wavelength bins.
 
 The task is to learn the $\theta$ parameters of a denoiser $f_\theta$ from noisy spectra only: during training, $y$ is used but $x$ is not. A blindspot predictor estimates each wavelength bin from its surrounding context with the center bin excluded:
+\begin{equation}
+    \hat{x}_{\lambda}
+        = f_{\theta}(y_{-\lambda},\sigma_{-\lambda}^2)
+\end{equation}
+Here $y_{-\lambda}$ and $\sigma_{-\lambda}^2$ denote the receptive-field input after excluding $y_{\lambda}$ and $\sigma_{\lambda}^2$, whereas $\hat{x}_{\lambda}$ is the point estimate returned by the network, and $\theta$ denotes all trainable weights and biases of the denoiser.
+
+As we noted before, $\sigma_{\lambda}^2$ is a deterministic function of the clean flux $x$ in our simulations, so feeding the full vector $\{\sigma_{\lambda}\}_{\lambda=1}^{N}$ into the network would leak information about the clean flux into the prediction. To avoid this, we summarize the per-bin variances into a single scalar $\bar{\sigma}^2$ and use it as input to the network:
 \begin{align}
     \hat{x}_{\lambda} 
         &= f_{\theta}(y_{-\lambda},\bar{\sigma}^2)
@@ -218,7 +226,7 @@ The task is to learn the $\theta$ parameters of a denoiser $f_\theta$ from noisy
     \bar{\sigma}^2
         &= \frac{1}{N}\sum_{\lambda=1}^{N}\sigma_{\lambda}^{2}.
 \end{align}
-Here $y_{-\lambda}$ denotes the receptive-field input after excluding $y_{\lambda}$, $\hat{x}_{\lambda}$ is the point estimate returned by the network, and $\theta$ denotes all trainable weights and biases of the denoiser. The scalar $\bar{\sigma}^2$ represents the overall noise level of the spectrum and $\bar{\sigma}$ has the same flux unit as $y$. We use the sum of the per-bin variances rather than the full vector $\{\sigma_{\lambda}\}_{\lambda=1}^{N}$ because the full vector contains wavelength-specific information from the noiseless simulated spectrum that could leak into the prediction. In this experiment, the pixel-wise variance is only used to generate the simulated noise, but the denoiser receives only the scalar summary $\bar{\sigma}$. In a real-survey deployment, this averaged $\bar{\sigma}$ can be replaced by the survey pipeline's own per-pixel noise estimate without any change to the network architecture. A Bayesian fusion of the network prediction with the noisy observation is possible in principle, but because the variance of the per-pixel noise level is negligible in the present setting, we do not apply it and take the network mean $\hat{x}$ directly as the denoised output.
+The scalar $\bar{\sigma}^2$ represents the overall noise level of the spectrum and $\bar{\sigma}$ has the same flux unit as $y$. We use the sum of the per-bin variances rather than the full vector $\{\sigma_{\lambda}^2\}_{\lambda=1}^{N}$ because the full vector contains wavelength-specific information from the noiseless simulated spectrum that could cause data leakage. Hence the full pixel-wise variance vector is used only to draw $\epsilon_{\lambda}$ in Equation~\ref{eq:noise_model_scalar}, and the network receives only the scalar noise summary $\bar{\sigma}$ defined in Equation~\ref{eq:blindspot_prediction}. The clean reference $x$ is completely withheld during training and used only for evaluation. In a real-survey deployment, the same input channel can carry the survey pipeline's noise estimate without changing the network architecture. A Bayesian fusion of the network prediction with the noisy observation is possible in principle, but because the variance of the per-pixel noise level is negligible in the present setting, we do not apply it and take the network mean $\hat{x}$ directly as the denoised output.
 
 We train the network with a noisy-target Huber loss in the form of
 \begin{align}
@@ -241,36 +249,40 @@ The optimization problem can be written as
 \end{equation}
 where the expectation value is taken over the ensemble of noisy spectra. The denoised spectrum is obtained by evaluating Equation~\ref{eq:blindspot_prediction} at $\theta^\ast$.
 
-Note, that neither clean fluxes nor per-pixel inverse-variance weights enter the training loss. The pixelwise variance vector is compressed into the scalar $\bar{\sigma}$ before it is supplied to the network. Under the symmetric zero-mean per-pixel noise model of Equation~\ref{eq:noise_model_scalar}, and for a Huber breakpoint $\delta$ chosen to be large relative to the typical residuals, the \ld{population minimizer is approximately}
+Note, that neither clean fluxes, nor per-pixel inverse-variance weights enter the training loss. The pixelwise variance vector is compressed into the scalar $\bar{\sigma}$ before it is supplied to the network and it is not used at all in the loss function.
+
+Under the symmetric zero-mean per-pixel noise model of Equation~\ref{eq:noise_model_scalar}, and for a Huber breakpoint $\delta$ chosen to be large relative to the typical residuals, the population minimizer is approximately
 \begin{equation}
     f^\ast(y_{-\lambda},\bar{\sigma}^2)
-    \;\approx\;
+    \approx
     \mathbb{E}\!\left[y_{\lambda}\mid y_{-\lambda},\bar{\sigma}^2\right]
-    \;=\;
+    =
     \mathbb{E}\!\left[x_{\lambda}\mid y_{-\lambda},\bar{\sigma}^2\right].
     \label{eq:population_target}
 \end{equation}
-The equality follows because the noise has zero conditional mean. Asymmetric or heavy-tailed noise, or a $\delta$ comparable to or smaller than the residual scale, would shift the optimum toward an outlier-attenuated conditional location rather than the conditional mean.
+The equality follows because the noise has zero conditional mean. Asymmetric or heavy-tailed noise, or a $\delta$ comparable to or smaller than the typical magnitude of the residuals, would shift the optimum toward an outlier-attenuated conditional location rather than the conditional mean.
 
 \subsection{Blindspot Network Architecture}
 \label{sec:blindspot_algorithm}
 
 A blindspot neural network can follow any feed-forward architecture 
-as long as the forward pass ensures one invariant: the feature used to predict the flux in bin $\lambda$ is never computed from $y_{\lambda}$. When feature extraction is done with a convolutional network, this property is often referred to as \textit{causality}. To compute some internal features that will be used downstream to predict $\hat{x}_{\lambda}$, the one-dimensional blindspot network uses two identical, but mirrored causal branches. The left branch calculates the feature vector $\m{u}_{\lambda}^{L} = U_{\theta}(\m{z}^{L})$, where $\m{z}^{L}$ is the input spectrum in the normal order of wavelength bins for all $\lambda_i < \lambda$, so the extracted features at $\lambda$ depend only on $y_{<\lambda}$. The right branch processes the wavelength-reversed spectrum for all $\lambda_i > \lambda$ and calculates $\m{u}_{\lambda}^{R} = U_{\theta}(\m{z}^{R})$, so the right-side features at $\lambda$ depend only on $y_{>\lambda}$. The prediction head, that calculates $\hat{x}_{\lambda}$, receives only the $\m{u}_{\lambda}^{L}$ and $\m{u}_{\lambda}^{R}$ feature vector, therefore, no computational path carries $y_{\lambda}$ into $\hat{x}_{\lambda}$.
+as long as the forward pass ensures one invariant: the feature used to predict the flux in bin $\lambda$ is never computed from $y_{\lambda}$. When feature extraction from the input is done with a convolutional network, this property is often referred to as \textit{causality}. To compute some internal features that will be used downstream to predict $\hat{x}_{\lambda}$, the one-dimensional blindspot network uses two identical, but mirrored causal branches. The left branch calculates the feature vector $\m{u}_{\lambda}^{L} = U_{\theta}(\m{z}^{L})$, where $\m{z}^{L}$ is the input spectrum in the normal order of wavelength bins for all $\lambda_i < \lambda$, so the extracted features at $\lambda$ depend only on $y_{<\lambda}$. The right branch processes the wavelength-reversed spectrum for all $\lambda_i > \lambda$ and calculates $\m{u}_{\lambda}^{R} = U_{\theta}(\m{z}^{R})$, so the right-side features at $\lambda$ depend only on $y_{>\lambda}$. The prediction head, that calculates $\hat{x}_{\lambda}$, receives only the $\m{u}_{\lambda}^{L}$ and $\m{u}_{\lambda}^{R}$ feature vector, therefore, no computational path carries $y_{\lambda}$ into $\hat{x}_{\lambda}$.
 
 \begin{figure}
     \begin{center}
-    \includegraphics{figs/network.pdf}
-    \label{fig:network}
+    \includegraphics{figs/fig_architecture_blindspot.pdf}
     \caption{Illustration of the blindspot network architecture for the prediction of a single spectrum pixel $\hat{x}_{\lambda}$. The two UNet blocks of $U_{\theta}$ are identical with the same weights but their receptive fields are only $y_{<\lambda}$ and $y_{>\lambda}$, respectively and $y_{\lambda}$ is excluded from both. The left block processes the input spectrum in increasing wavelength order, while the input of the right block is reversed in wavelength order. The two feature vectors $u_{\lambda}^{L}$ and $u_{\lambda}^{R}$ are concatenated and passed to the pointwise head $g_{\theta}$ to predict $\hat{x}_{\lambda}$.}
+    \label{fig:network}
     \end{center}
 \end{figure}
 
-The input to the blindspot network is a 1-dimensional array $y\in\mathbb{R}^{L}$ representing the continuum-normalized flux, ordered by wavelength and $\lambda$, the index of the wavelength bin of interest. The output of the network is $\hat{x}_\lambda$, where each $\hat{x}_{\lambda}$ depends on $y_{<\lambda}$ and $y_{>\lambda}$ but not on $y_{\lambda}$.
+The input to the blindspot network is a 1-dimensional array $y\in\mathbb{R}^{N}$ or the stacked array $\{y_\lambda, \sigma_\lambda\}_{\lambda=1}^{N} \in\mathbb{R}^{2 \times N}$ representing the continuum-normalized flux and the pixel-wise variance, ordered by wavelength. To select a specific $\lambda$ for which the prediction is made, the input is padded so that the receptive field of the network covers only $y_{<\lambda}$ and $y_{>\lambda}$, but not $y_{\lambda}$. The output of the network is $\hat{x}_\lambda$. The architecture is illustrated in Figure~\ref{fig:network}. When two separate channels for the flux and the variance are used, two feature vectors are created by $U_{\theta}$, and both are fed into the pointwise head $g_{\theta}$ to predict $\hat{x}_{\lambda}$.
+
+In case of simulated spectra, to avoid data leakage, the pixel-wise variance vector $\{\sigma_\lambda\}_{\lambda=1}^{N}$ is substituted with the constant vector $\bar{\sigma}$, which is the mean of the pixel-wise variance vector.
 
 The blindspot network is evaluated in the following steps:
 \begin{enumerate}
-    \item Route the spectrum in the two wavelength directions: $z^{L}\leftarrow y$ and $z^{R}\leftarrow\mathrm{rev}(y)$.
+    \item Route the noisy spectrum $y$ and $\bar{\sigma}$ in the two wavelength directions: $z^{L}\leftarrow y$ and $z^{R}\leftarrow\mathrm{rev}(y)$.
     \item Apply the same $U_{\theta}$ to each branch shifted to the wavelength of interest:
     $u^{L}\leftarrow U_{\theta}(z^{L})$, $\tilde{u}^{R}\leftarrow U_{\theta}(z^{R})$.
     \item Restore the right-branch features to the original wavelength order:
@@ -279,20 +291,20 @@ The blindspot network is evaluated in the following steps:
     $h_{\lambda}\leftarrow[u^{L}_{\lambda},u^{R}_{\lambda}]$, $\hat{x}_{\lambda}\leftarrow g_{\theta}(h_{\lambda})$.
 \end{enumerate}
 
-\begin{algorithmblock}{Blindspot feature construction for one-dimensional spectra}
-\label{alg:blindspot_forward}
-\noindent\algkey{Input:} noisy spectrum $y\in\mathbb{R}^{L}$, shifted causal trunk $U_{\theta}$, pointwise head $g_{\theta}$.
-\begin{enumerate}
-    \item Route the spectrum in the two wavelength directions: $z^{L}\leftarrow y$ and $z^{R}\leftarrow\mathrm{rev}(y)$.
-    \item Apply the same shifted causal trunk:
-    $u^{L}\leftarrow U_{\theta}(z^{L})$, $\tilde{u}^{R}\leftarrow U_{\theta}(z^{R})$.
-    \item Restore the right-branch features to the original wavelength order:
-    $u^{R}\leftarrow\mathrm{rev}(\tilde{u}^{R})$, so $u^{L}_{\lambda}$ sees $y_{<\lambda}$ and $u^{R}_{\lambda}$ sees $y_{>\lambda}$.
-    \item Concatenate the two blindspot features and predict each bin:
-    $h_{\lambda}\leftarrow[u^{L}_{\lambda},u^{R}_{\lambda}]$, $\hat{x}_{\lambda}\leftarrow g_{\theta}(h_{\lambda})$.
-\end{enumerate}
-\noindent\algkey{Output:} $\hat{x}$, where each $\hat{x}_{\lambda}$ depends on $y_{<\lambda}$ and $y_{>\lambda}$ but not on $y_{\lambda}$.
-\end{algorithmblock}
+% \begin{algorithmblock}{Blindspot feature construction for one-dimensional spectra}
+% \label{alg:blindspot_forward}
+% \noindent\algkey{Input:} noisy spectrum $y\in\mathbb{R}^{L}$, shifted causal trunk $U_{\theta}$, pointwise head $g_{\theta}$.
+% \begin{enumerate}
+%     \item Route the spectrum in the two wavelength directions: $z^{L}\leftarrow y$ and $z^{R}\leftarrow\mathrm{rev}(y)$.
+%     \item Apply the same shifted causal trunk:
+%     $u^{L}\leftarrow U_{\theta}(z^{L})$, $\tilde{u}^{R}\leftarrow U_{\theta}(z^{R})$.
+%     \item Restore the right-branch features to the original wavelength order:
+%     $u^{R}\leftarrow\mathrm{rev}(\tilde{u}^{R})$, so $u^{L}_{\lambda}$ sees $y_{<\lambda}$ and $u^{R}_{\lambda}$ sees $y_{>\lambda}$.
+%     \item Concatenate the two blindspot features and predict each bin:
+%     $h_{\lambda}\leftarrow[u^{L}_{\lambda},u^{R}_{\lambda}]$, $\hat{x}_{\lambda}\leftarrow g_{\theta}(h_{\lambda})$.
+% \end{enumerate}
+% \noindent\algkey{Output:} $\hat{x}$, where each $\hat{x}_{\lambda}$ depends on $y_{<\lambda}$ and $y_{>\lambda}$ but not on $y_{\lambda}$.
+% \end{algorithmblock}
 
 \subsection{Identifiability and Recoverability}
 \label{sec:theory}
@@ -311,7 +323,7 @@ If the center pixel was visible, the noisy-target objective would have a zero-lo
 \]
 This solution contains no information about $x_{\lambda}$. The blindspot construction eliminates this problem by explicitly excluding $y_{\lambda}$ from the receptive field of the network.
 
-\paragraph{Identifiability follows from zero-mean noise.} Let $\Omega_{\lambda} = (y_{-\lambda},\bar{\sigma})$ denote the blindspot context. Identifiability follows from
+\paragraph{Identifiability follows from zero-mean noise} Let $\Omega_{\lambda} = (y_{-\lambda},\bar{\sigma})$ denote the blindspot context. Identifiability follows from
 \begin{align}
     y_{\lambda} = x_{\lambda} + \epsilon_{\lambda} \\[1em]
     \mathbb{E}\!\left[\epsilon_{\lambda} \mid x_{\lambda},\Omega_{\lambda}\right] = 0,
@@ -330,23 +342,26 @@ The unpredictable noise washes out under the conditional expectation, leaving th
 Equation~\ref{eq:consistency} characterizes the conditional mean as the optimal MSE regression target. The trained model uses the Huber loss $\ell_{\delta}$ in Equation~\ref{eq:self_supervised_loss} for outlier robustness. As $\delta\to\infty$, this loss reduces to MSE and the population optimum coincides with the conditional mean, while at finite $\delta$, the optimum is a Huber M-estimator that approximates the conditional mean when residuals are sub-Gaussian relative to the breakpoint. We therefore use Equation~\ref{eq:consistency} as the leading-order target in the magnitude range of Table~\ref{tab:data_summary}, not as an unconditional exact minimizer outside that range.
 
 \paragraph{Recoverability is measured by a context-residual ratio}
-The blindspot construction is useful only when the spectral pixels surrounding the blind spot determine the clean flux at the hidden wavelength better than the noisy observation itself. We measure the recoverability by the ratio between two variances: let $\tau_\lambda^{2}$ denote the conditional clean-flux variance left after observing the blindspot context, and let $\sigma_\lambda^{2}$ denote the per-pixel noise variance. We denote this ratio by $\gamma_\lambda$ and express it in terms of the conditional variance of the clean flux and the variance of the noise as
+The blindspot construction is useful only when the spectral pixels surrounding the blind spot determine the clean flux at the hidden wavelength better than the noisy observation itself. We measure the recoverability by the ratio between two variances: let $\tau_\lambda^{2}$ denote the conditional variance of the clean flux after observing the blindspot context, whereas we keep using $\sigma_\lambda^{2}$ to denote the variance of the noise in the withheld pixel:
 \begin{align}
-    \gamma_\lambda &=\; \frac{\tau_\lambda^{2}}{\sigma_\lambda^{2}} \\[0.5em]
-    \sigma_\lambda^{2} &= \mathrm{Var}(\epsilon_{\lambda}) \\[1em]
-    \tau_\lambda^{2} &= \mathrm{Var}(x_{\lambda}\mid\Omega_{\lambda}).
+    \tau_\lambda^{2} &= \mathrm{Var}(x_{\lambda}\mid\Omega_{\lambda}) \\[1em]
+    \sigma_\lambda^{2} &= \mathrm{Var}(\epsilon_{\lambda}).
+\end{align}
+With these, we define the ratio
+\begin{align}
+    \gamma_\lambda &=\; \frac{\tau_\lambda^{2}}{\sigma_\lambda^{2}}.
     \label{eq:gamma}
 \end{align}
 A small $\gamma_\lambda$ means the context predicts the clean flux more accurately than the noisy center observation itself, so the real flux at the hidden wavelength is recoverable in the sense needed for blindspot denoising. \ld{???: In this heteroscedastic simulator, $\gamma$ is a spectrum-level recoverability summary whose per-pixel interpretation is recorded in Appendix~\ref{app:gamma_heteroscedasticity}.}
 
 \paragraph{Heteroscedasticity and the scalar $\gamma$} \ld{Something is wrong here cause $\gamma$ is clearly not a scalar but depends on $\lambda$}
-The observation simulator outputs the $\sigma_{\lambda}^{2}$ per-pixel variances, see Eq.~\ref{eq:noise_components}, while the network receives the spectrum-level scalar $\bar{\sigma}^{2}=L^{-1}\sum_{\lambda}\sigma_{\lambda}^{2}$. The scalar $\gamma$ in Equation~\ref{eq:gamma} therefore describes spectrum-averaged recoverability under the same averaging used for conditioning. Wavelength windows whose local variance profile differs strongly from $\bar{\sigma}^{2}$, such as the \mbox{O$_2$} A-band, require direct window diagnostics. We will evaluate those windows in Section~\ref{sec:results_physical} instead of treating the scalar $\gamma$ as a local guarantee.
+The observation simulator outputs the $\sigma_{\lambda}^{2}$ per-pixel variances, see Eq.~\ref{eq:noise_components}, while the network receives the spectrum-level scalar $\bar{\sigma}^{2}=N^{-1}\sum_{\lambda}\sigma_{\lambda}^{2}$. The scalar $\gamma$ in Equation~\ref{eq:gamma} therefore describes spectrum-averaged recoverability under the same averaging used for conditioning. Wavelength windows whose local variance profile differs strongly from $\bar{\sigma}^{2}$, such as the \mbox{O$_2$} A-band, require direct window diagnostics. We will evaluate those windows in Section~\ref{sec:results_physical} instead of treating the scalar $\gamma$ as a local guarantee.
 
 \paragraph{The target support has a physically set correlation scale}
-The reason to expect small $\gamma$ is not generic smoothness, but the ratio between the spectral correlation length and the \ld{per-bin noise scale ??}. The spectral correlation length is determined jointly by stellar physics via intrinsic line width and by the instrument via the line-spread function.
+The reason to expect small $\gamma_\lambda$ is not generic smoothness, but the ratio between the spectral correlation length and the variance of the noise. \ld{Why?} The spectral correlation length is determined jointly by stellar physics via intrinsic line width and by the instrument via the line-spread function.
 
 %Neighboring bins can therefore predict the flux in a withheld bin only when the astrophysical and instrumental line widths are sampled by enough pixels.
-\ld{In case of typical medium-resolution stellar spectra, the wavelength resolution is designed to sample the line-spread function with at least two pixels per FWHM, and the astrophysical line widths are usually broader than the instrumental width. The combination of these two effects ensures that neighboring bins carry information about the flux in a withheld bin, which is the basis for the blindspot denoising approach.}
+In case of typical medium-resolution stellar spectra, the wavelength resolution is designed to sample the line-spread function with at least two pixels per FWHM, and the astrophysical line widths are usually broader than the instrumental width. The combination of these two effects ensures that neighboring bins carry enough information about the flux in a withheld bin, which is the basis for the blindspot denoising approach.
 \ld{??? We verify this S/N range directly on clean BOSZ test spectra: simple local predictors leave residual variance below about $10^{-3}$ of the injected per-pixel noise variance in the conservative $95$th-percentile summary, with the full per-estimator measurement table given in Appendix~\ref{app:controls_gamma}.}
 Spectra with different surface gravity distributions, or a different line-spread function should be checked separately rather than assumed to share the same small-$\gamma$ range. We therefore use the small-$\gamma$ argument as a range statement for this simulated data set, not as an unconditional guarantee beyond it.
 
@@ -362,11 +377,11 @@ Calculating a formal information-channel bound for this propagation is left for 
 % \label{sec:data_noise}
 
 \subsection{Training}
-We instantiate the feature construction in Algorithm~\ref{alg:blindspot_forward} with a one-dimensional U-Net, scalar noise-level conditioning through $\bar{\sigma}$, and a single-head $\hat{x}$ output. The training protocol is summarized in Protocol~\ref{prot:blindspot_training}; no clean reference enters the optimization.
+We instantiate the feature construction of Section~\ref{sec:blindspot_algorithm} with a one-dimensional U-Net, scalar noise-level conditioning through $\bar{\sigma}$, and a single-head $\hat{x}$ output. The training protocol is summarized in Protocol~\ref{prot:blindspot_training}; no clean reference enters the optimization.
 
 \begin{protocolblock}{Training protocol for the reported blindspot model}
 \label{prot:blindspot_training}
-\noindent\algkey{Input:} noisy training spectra $\{y^{(j)}\}_{j=1}^{N}$, simulator variances $\{(\sigma_{\lambda}^{(j)})^{2}\}$, and the blindspot model of Algorithm~\ref{alg:blindspot_forward}.
+\noindent\algkey{Input:} noisy training spectra $\{y^{(j)}\}_{j=1}^{N}$, simulator variances $\{(\sigma_{\lambda}^{(j)})^{2}\}$, and the blindspot model described in Section~\ref{sec:blindspot_algorithm}.
 \begin{enumerate}
     \item Compute the scalar noise condition for each spectrum:
     $\bar{\sigma}^{(j)}=\sqrt{L^{-1}\sum_{\lambda}(\sigma_{\lambda}^{(j)})^{2}}$; the pixelwise $\sigma_{\lambda}^{(j)}$ profile is not provided to the network.
@@ -383,22 +398,14 @@ We instantiate the feature construction in Algorithm~\ref{alg:blindspot_forward}
 
 \ld{??? All metrics reported in Section~\ref{sec:results} use one validation-selected model and one metric definition per column. Per-spectrum metrics are averaged across spectra within each test-set noise realization and then across realizations; reported $\pm$ values are $95\%$ confidence intervals over the realizations in Table~\ref{tab:data_summary}.}
 
-\paragraph{Signal-to-noise ratio} Since in case of simulated spectra, we know the clean reference, as well as the noise variance as a function of wavelength, but we cannot calculate the latter for the denoised output, we use a definition of S/N that can be calculated for both. Writing $z\in\{y,\hat{x}\}$ for either the noisy input or the denoiser output evaluated against the clean reference $x$, signal-to-noise is defined as
-\ld{???
+\paragraph{Reconstruction RMSE} For a reconstructed spectrum $z\in\{y,\hat{x}\}$ evaluated against the clean reference $x$, we report the per-spectrum root-mean-square reconstruction error
 \begin{equation}
-    \mathrm{S/N}(z)
-    \;=\;
-    \frac{\lVert x\rVert_{2}}{\lVert x-z\rVert_{2}}
-    % \qquad
-    % \mathrm{S/N}(X)\big|_{\mathrm{dB}}
-    % \;:=\;
-    % 10\log_{10}\!\bigl[\mathrm{S/N}(X)\bigr]^{2}
-    % \;=\;
-    % 20\log_{10}\!\mathrm{S/N}(X).
-    \label{eq:snr_def}
+    \mathrm{RMSE}(z)
+    =
+    \frac{\lVert x-z\rVert_{2}}{\sqrt{N}}.
+    \label{eq:rmse_def}
 \end{equation}
-}
-Whenever reconstruction S/N is reported from now on, it is the \ld{per-spectrum norm ratio} in Equation~\ref{eq:snr_def} evaluated against the clean test reference. \ld{We do not report a variance-normalized alternative; aggregations over wavelength enter only through the $\ell_{2}$ norms in Equation~\ref{eq:snr_def}}, and aggregations over spectra are performed only after this per-spectrum quantity has been computed.
+Aggregate reconstruction results are computed after this per-spectrum quantity has been evaluated for each test spectrum.
 
 \paragraph{Equivalent width} Since we work with continuum-normalized synthetic spectra, the definition of absorption-line equivalent width (EW) is simply
 \begin{equation}
@@ -433,40 +440,11 @@ The relative EW error with respect to a clean reference is defined as
     \label{eq:ew_relative_error}
 \end{equation}
 
-% === Polarity-flip diagnostic removed per 2026-07-01 advisor meeting (confusing; absorption->emission flip essentially never happens; deferred to thesis). Kept for recovery. ===
-\iffalse
-\paragraph{Polarity-flip rate}
-
-Continuum-relative polarity uses a robust continuum-level reference for each normalized clean spectrum. For spectrum $s$, let $m_s=\operatorname{median}_{\lambda}x_s(\lambda)$ denote the median flux of the clean normalized spectrum; this median is a fixed reference level for the diagnostic, not a fitted physical continuum. The polarity-flip statistic measures whether an informative pixel in $y$ or $\hat{x}$ lies on the same side of $m_s$ as the clean flux. Unlike EW, which integrates a fixed line window, this statistic counts sign errors in local contrast and, therefore, detects line filling or contrast inversion at the pixel level. Define
-\begin{equation}
-\begin{aligned}
-    \mathcal{P}
-    &= \{(s,\lambda): |x_s(\lambda)-m_s|\geq0.02\,m_s\},\\
-    \mathcal{P}_{-}
-    &= \{(s,\lambda)\in\mathcal{P}:x_s(\lambda)<m_s\},\qquad
-    \mathcal{P}_{+}
-    = \{(s,\lambda)\in\mathcal{P}:x_s(\lambda)>m_s\},\\
-    p_{\mathrm{flip}}(X;\mathcal{Q})
-    &= \frac{1}{|\mathcal{Q}|}
-       \sum_{(s,\lambda)\in\mathcal{Q}}
-       \mathbf{1}\!\left[
-       \operatorname{sign}\!\bigl(X_s(\lambda)-m_s\bigr)
-       \neq
-       \operatorname{sign}\!\bigl(x_s(\lambda)-m_s\bigr)
-       \right],
-       \quad \mathcal{Q}\in\{\mathcal{P},\mathcal{P}_{-},\mathcal{P}_{+}\}.
-\end{aligned}
-\label{eq:polarity_flip}
-\end{equation}
-\fi
-
 The three headline metrics are:
 \begin{itemize}\itemsep0pt\topsep2pt
-\item \textbf{Reconstruction S/N}: Equation~\ref{eq:snr_def}, evaluated over all wavelength bins of the denoised spectrum.
+\item \textbf{Reconstruction RMSE}: Equation~\ref{eq:rmse_def}, evaluated over all wavelength bins of the denoised spectrum.
 \item \textbf{Ca\,\textsc{ii} EW error}: Equation~\ref{eq:ew_relative_error} on $\mathcal{W}_{c}=\{\lambda:|\lambda-c|\leq6\,\text{\AA}\}$ for $c\in\{8498,8542,8662\}$~\AA. For each line we report the median over spectra. The ``triplet mean'' is the arithmetic mean of those three per-line medians, $\epsilon_{\mathrm{EW}}^{\mathrm{CaT}}=\tfrac{1}{3}\sum_{c\in\{8498,8542,8662\}}\operatorname{median}_{s}\,\epsilon_{\mathrm{EW}}(z_s;\mathcal{W}_{c})$.
-% \item \textbf{Polarity-flip rate}: Equation~\ref{eq:polarity_flip}, reported on $\mathcal{P}$, $\mathcal{P}_{-}$, and $\mathcal{P}_{+}$.  % removed 2026-07-01
-\item \textbf{Telluric S/N}: Equation~\ref{eq:snr_def} restricted to
-$\mathcal{W}_{\mathrm{O}_2}=\{\lambda:7590\leq\lambda\leq7700\,\text{\AA}\}$. This window has very low input reconstruction S/N because the simulated observational variance is large in the \mbox{O$_2$} A-band, where sky-background and atmospheric-throughput terms dominate the noise scale relative to the normalized stellar signal. The diagnostic therefore tests whether the blindspot model can interpolate a high-noise atmospheric window under the independent, zero-mean simulator noise model. It should not be read as evidence that correlated real telluric or sky-subtraction residuals can be removed without additional modeling.
+\item \textbf{\mbox{O$_2$} A-band degradation}: Equation~\ref{eq:ew_relative_error} restricted to $\mathcal{W}_{\mathrm{O}_2}=\{\lambda:7590\leq\lambda\leq7700\,\text{\AA}\}$. This window has large simulated observational variance because sky-background and atmospheric-throughput terms dominate the noise scale relative to the normalized stellar signal. The diagnostic therefore tests whether the blindspot model can interpolate a high-noise atmospheric window under the independent, zero-mean simulator noise model. It should not be read as evidence that correlated real telluric or sky-subtraction residuals can be removed without additional modeling.
 \end{itemize}
 
 Exact model hyperparameters, evaluation-contract details, and validation-tuning rules for the non-neural reference methods are collected in Appendices~\ref{app:contract}--\ref{app:controls_gamma}.
@@ -481,13 +459,15 @@ On the reconstruction test split, mean per-spectrum reconstruction RMSE falls fr
 \begin{figure*}
 \centering
 \includegraphics[width=\textwidth]{figs/fig1_representative.pdf}
-\caption{Representative low-S/N test spectrum near the faint end of the magnitude range ($T_{\rm eff}=4750$~K, $\log g=2.0$, $[\mathrm{M}/\mathrm{H}]=-2.25$, $\mathrm{mag}=22.45$, input $\mathrm{S/N}[y]\approx3$). \textbf{Top:} noisy input $y$ and clean reference $x$ on the full mask-pruned wavelength grid, with the Ca\,\textsc{ii} triplet region shaded. \textbf{Middle:} clean reference $x$ and blindspot output $\hat{x}$, offset for readability, with the residual $x-\hat{x}$ shown below; this spectrum has $\mathrm{S/N}[\hat{x}]\approx115$. \textbf{Bottom:} Ca\,\textsc{ii} triplet zoom, where the line-restricted statistic is $\mathrm{S/N}[\hat{x}_{\rm Ca\,II}]\approx51$. The output follows the narrow Ca\,\textsc{ii} cores rather than flattening them toward the continuum.}
+\caption{Representative low-S/N test spectrum near the faint end of the magnitude range ($T_{\rm eff}=4750$~K, $\log g=2.0$, $[\mathrm{M}/\mathrm{H}]=-2.25$, $\mathrm{mag}=22.45$, input S/N approximately $3$). \textbf{Top:} noisy input $y$ and clean reference $x$ on the full mask-pruned wavelength grid, with the Ca\,\textsc{ii} triplet region shaded. \textbf{Middle:} clean reference $x$ and blindspot output $\hat{x}$, offset for readability, with the residual $x-\hat{x}$ shown below. \textbf{Bottom:} Ca\,\textsc{ii} triplet zoom. The output follows the narrow Ca\,\textsc{ii} cores rather than flattening them toward the continuum.}
 \label{fig:representative_spectrum}
 \end{figure*}
 
 
 \begin{table*}
 \centering
+\caption{Test-set reconstruction quality on $10{,}000$ test spectra, reported as the per-spectrum root-mean-square reconstruction error $\mathrm{RMSE}=\lVert x-z\rVert_{2}/\sqrt{N}$ against the clean reference (smaller is better; mean and median over spectra). Rows group the observed input, a validation-tuned clean-template PCA reference, the self-supervised blindspot with and without the scalar noise condition $\bar{\sigma}$, and a supervised clean-target reference. The clean-template PCA and supervised U-Net rows are fit with access to clean spectra and are not deployable comparisons; they bound the linear estimator class and the paired-data ceiling respectively. Baseline tuning grids and the noisy-trained PCA are listed in Appendix~\ref{app:controls_gamma}; the central-visible copy-shortcut control is in Appendix~\ref{app:architecture_integrity}.}
+\label{tab:main_baselines}
 \begin{tabular}{llcc}
 \hline
 Method & Reference type & Mean RMSE & Median RMSE [$5\%, 95\%$] \\
@@ -499,8 +479,6 @@ Blindspot, no $\bar{\sigma}$ & self-supervised & $0.00554$ & $0.00478$ [$0.00210
 Supervised U-Net & clean-target ceiling & $0.00428$ & $0.00368$ [$0.00157$, $0.00907$] \\
 \hline
 \end{tabular}
-\label{tab:main_baselines}
-\caption{Test-set reconstruction quality on $10{,}000$ test spectra, reported as the per-spectrum root-mean-square reconstruction error $\mathrm{RMSE}=\lVert x-z\rVert_{2}/\sqrt{N}$ against the clean reference (smaller is better; mean and median over spectra). Rows group the observed input, a validation-tuned clean-template PCA reference, the self-supervised blindspot with and without the scalar noise condition $\bar{\sigma}$, and a supervised clean-target reference. The clean-template PCA and supervised U-Net rows are fit with access to clean spectra and are not deployable comparisons; they bound the linear estimator class and the paired-data ceiling respectively. Baseline tuning grids and the noisy-trained PCA are listed in Appendix~\ref{app:controls_gamma}; the central-visible copy-shortcut control is in Appendix~\ref{app:architecture_integrity}.}
 \end{table*}
 
 The ablation rows isolate where the gain comes from. A central-visible control that keeps the target bin in the receptive field collapses to the noisy-input scale (Appendix~\ref{app:architecture_integrity}), so the gain requires the blindspot exclusion rather than ordinary regression. The scalar noise condition $\bar{\sigma}$ is a minor refinement --- mean RMSE improves from $0.0055$ to $0.0053$ --- so the reconstruction is carried by the blindspot construction itself, not by the noise-level input. A supervised U-Net trained on paired clean targets reaches $0.0043$; the self-supervised blindspot recovers most of that headroom at $0.0053$ without ever seeing a clean spectrum. The strongest traditional baselines stay far above: a clean-template PCA, fit on noiseless spectra, floors at $0.011$, so the gain over classical and linear methods is not bought by access to clean training data. The line-preservation diagnostics in Section~\ref{sec:results_physical} establish that this gain is genuine line recovery rather than smoothing toward the continuum, and the central-pixel exclusion behind the reconstruction is verified numerically in Appendix~\ref{app:architecture_integrity}. Why the fixed-basis estimators cannot close the gap --- with or without clean targets, and even when granted a rest-frame alignment step --- is taken up in Appendix~\ref{app:controls_gamma} and Section~\ref{sec:discussion}.
@@ -518,6 +496,8 @@ A pixel-level reconstruction gain is useful for Galactic Archaeology only if the
 
 \begin{table*}
 \centering
+\caption{Clean-trained $\log g$ estimator on four reconstruction inputs, evaluated without refitting on $5{,}000$ test spectra. $\sigma_{\rm rob}$ is the centered Gaussian-equivalent dispersion of the residual $\widehat{\log g}-\log g_{\rm true}$; MAE and bias are the mean absolute and mean signed residuals; $R^{2}$ is the coefficient of determination. The clean-input row is an upper reference under the fixed mapping. Paired-bootstrap $95\%$ confidence intervals over $1000$ resamples on the blindspot-vs-noisy ratios are $\sigma_{\rm rob}$-ratio $0.64$ $[0.61,\,0.66]$ and MAE-ratio $0.70$ $[0.68,\,0.72]$.}
+\label{tab:downstream_logg}
 \begin{tabular}{lcccc}
 \hline
 Input spectrum & $\sigma_{\rm rob}$ [dex] & MAE [dex] & Bias [dex] & $R^{2}$ \\
@@ -528,8 +508,6 @@ Savitzky--Golay smoother (val.\ tuned)& $1.11$ & $0.88$ & $-0.078$ & $0.10$ \\
 Noisy input                           & $1.26$ & $0.96$ & $-0.170$ & $0.01$ \\
 \hline
 \end{tabular}
-\label{tab:downstream_logg}
-\caption{Clean-trained $\log g$ estimator on four reconstruction inputs, evaluated without refitting on $5{,}000$ test spectra. $\sigma_{\rm rob}$ is the centered Gaussian-equivalent dispersion of the residual $\widehat{\log g}-\log g_{\rm true}$; MAE and bias are the mean absolute and mean signed residuals; $R^{2}$ is the coefficient of determination. The clean-input row is an upper reference under the fixed mapping. Paired-bootstrap $95\%$ confidence intervals over $1000$ resamples on the blindspot-vs-noisy ratios are $\sigma_{\rm rob}$-ratio $0.64$ $[0.61,\,0.66]$ and MAE-ratio $0.70$ $[0.68,\,0.72]$.}
 \end{table*}
 
 The clean-reference $R^{2}$ in Table~\ref{tab:downstream_logg} establishes that the fixed map extracts gravity-discriminating information on this BOSZ support. The blindspot row inherits that information channel: scatter, mean absolute error, and systematic bias all move from the noisy-input scale toward the clean-reference scale, while the validation-tuned Savitzky--Golay smoother in the same configuration stays near the noisy-input scale across the metrics. The bias row makes the contrast sharpest: blindspot output nearly removes the noisy systematic offset (\mbox{$+0.02$} versus $-0.17$~dex), while the smoother remains offset at about $-0.08$~dex. The reduction therefore tracks the line-preserving reconstructions of Section~\ref{sec:results_physical}, not generic noise removal.
@@ -541,7 +519,7 @@ The blindspot row tracks the clean column at an approximately fixed offset acros
 \subsection{Line-preservation diagnostics}
 \label{sec:results_physical}
 
-Aggregate reconstruction S/N does not by itself exclude simple smoothing or line filling. We therefore test the reconstructed spectra with a line-sensitive diagnostic --- relative equivalent-width error on each Ca\,\textsc{ii} triplet line --- and, separately, a high-noise control in the sky-dominated \mbox{O$_2$} A-band, which is an atmospheric-window stress test rather than a stellar-line diagnostic (Table~\ref{tab:main_results}).
+Aggregate reconstruction RMSE does not by itself exclude simple smoothing or line filling. We therefore test the reconstructed spectra with a line-sensitive diagnostic --- relative equivalent-width error on each Ca\,\textsc{ii} triplet line --- and, separately, a high-noise control in the sky-dominated \mbox{O$_2$} A-band, which is an atmospheric-window stress test rather than a stellar-line diagnostic (Table~\ref{tab:main_results}).
 
 \begin{table*}
 \centering
@@ -557,14 +535,8 @@ Diagnostic & Noisy input $y$ & Blindspot output $\hat{x}$ \\
 $\quad 8498$~\AA{} & $0.737$ & $\mathbf{0.121}$ \\
 $\quad 8542$~\AA{} & $0.328$ & $\mathbf{0.098}$ \\
 $\quad 8662$~\AA{} & $1.02$ & $\mathbf{0.147}$ \\
-$\quad 8498$~\AA{} & $0.737$ & $\mathbf{0.121}$ \\
-$\quad 8542$~\AA{} & $0.328$ & $\mathbf{0.098}$ \\
-$\quad 8662$~\AA{} & $1.02$ & $\mathbf{0.147}$ \\
 \hline
-% polarity rows removed 2026-07-01 advisor meeting
 \multicolumn{3}{l}{\emph{\mbox{O$_2$} A-band window, $7590$--$7700$~\AA{}}} \\
-$\quad$Window-restricted reconstruction S/N & $0.16$ & $\mathbf{3.6}$ \\
-$\quad$Mean relative EW degradation & $22.2$ & $\mathbf{1.19}$ \\
 $\quad$Mean relative EW degradation & $22.2$ & $\mathbf{1.19}$ \\
 \hline
 \end{tabular}
@@ -579,7 +551,7 @@ $\quad$Mean relative EW degradation & $22.2$ & $\mathbf{1.19}$ \\
 
 All three Ca\,\textsc{ii} lines move in the same direction in Table~\ref{tab:main_results}: the recovery is not concentrated on the strongest core. The \mbox{O$_2$} A-band rows extend the same test into a narrow, high-noise atmospheric window dominated by sky and detector terms; the window is recovered rather than dropped, under this simulator. Figure~\ref{fig:caII_zoom} supplies the morphology behind the table: the blindspot output follows the depth and width of the line cores rather than flattening them toward the continuum.
 
-The downstream gain of Section~\ref{sec:results_downstream_logg} is therefore carried by line preservation, not by generic smoothing. The validation-tuned smoothers and PCA references in Table~\ref{tab:main_baselines} fall short on the same diagnostics; central-pixel leakage is ruled out structurally (Algorithm~\ref{alg:blindspot_forward}) and numerically (Appendix~\ref{app:architecture_integrity}); the context-predictability premise behind that construction is verified with model-free predictors in Appendix~\ref{app:controls_gamma}. All claims in this section are scoped to continuum-normalized, medium-resolution, late-type BOSZ/PFS-like spectra at magnitude $20.5$--$22.5$ under the independent zero-mean per-pixel noise model of Section~\ref{sec:method}.
+The downstream gain of Section~\ref{sec:results_downstream_logg} is therefore carried by line preservation, not by generic smoothing. The validation-tuned smoothers and PCA references in Table~\ref{tab:main_baselines} fall short on the same diagnostics; central-pixel leakage is ruled out structurally by the construction in Section~\ref{sec:blindspot_algorithm} and numerically in Appendix~\ref{app:architecture_integrity}; the context-predictability premise behind that construction is verified with model-free predictors in Appendix~\ref{app:controls_gamma}. All claims in this section are scoped to continuum-normalized, medium-resolution, late-type BOSZ/PFS-like spectra at magnitude $20.5$--$22.5$ under the independent zero-mean per-pixel noise model of Section~\ref{sec:method}.
 
 \section{Discussion}
 \label{sec:discussion}
@@ -653,9 +625,7 @@ Environment specification & software pin & all numerical results \\
 
 \paragraph{Validation and test separation.}
 The reconstruction training, validation, and test sets contain $200{,}000$, $1{,}000$, and $10{,}000$ spectra respectively, drawn without replacement from the same scope-restricted BOSZ library so that the marginal distributions over $T_{\rm eff}$, $\log g$, $[\mathrm{M}/\mathrm{H}]$, and magnitude match across splits. All hyperparameter selection --- the training-time validation rule for the blindspot model, the classical-baseline grids in Appendix~\ref{app:controls_gamma}, and the model-free $\gamma$ predictors --- uses the validation split alone, with a single fixed validation noise seed. After selection, the hyperparameters are held fixed, and the reconstruction and line-preservation results are computed on the reconstruction test split of $10{,}000$ spectra with one noise realization per spectrum. Reported intervals for the Ca\,\textsc{ii} equivalent-width rows are paired-bootstrap intervals over test spectra.
-The reconstruction training, validation, and test sets contain $200{,}000$, $1{,}000$, and $10{,}000$ spectra respectively, drawn without replacement from the same scope-restricted BOSZ library so that the marginal distributions over $T_{\rm eff}$, $\log g$, $[\mathrm{M}/\mathrm{H}]$, and magnitude match across splits. All hyperparameter selection --- the training-time validation rule for the blindspot model, the classical-baseline grids in Appendix~\ref{app:controls_gamma}, and the model-free $\gamma$ predictors --- uses the validation split alone, with a single fixed validation noise seed. After selection, the hyperparameters are held fixed, and the reconstruction and line-preservation results are computed on the reconstruction test split of $10{,}000$ spectra with one noise realization per spectrum. Reported intervals for the Ca\,\textsc{ii} equivalent-width rows are paired-bootstrap intervals over test spectra.
 
-The downstream $\log g$ calibrator uses a separate labeled BOSZ pool of $50{,}000$ spectra. Calibrator training uses $30{,}000$ clean spectra; the fitted model is then evaluated without refitting on a disjoint $5{,}000$-spectrum test partition represented in four ways: clean reference, blindspot output, noisy input, and a Savitzky--Golay smoother. The blindspot-vs-noisy confidence intervals in Table~\ref{tab:downstream_logg} are paired-bootstrap intervals over $1000$ resamples of that $5{,}000$-spectrum downstream test partition.
 The downstream $\log g$ calibrator uses a separate labeled BOSZ pool of $50{,}000$ spectra. Calibrator training uses $30{,}000$ clean spectra; the fitted model is then evaluated without refitting on a disjoint $5{,}000$-spectrum test partition represented in four ways: clean reference, blindspot output, noisy input, and a Savitzky--Golay smoother. The blindspot-vs-noisy confidence intervals in Table~\ref{tab:downstream_logg} are paired-bootstrap intervals over $1000$ resamples of that $5{,}000$-spectrum downstream test partition.
 
 \paragraph{Software environment.}
@@ -667,7 +637,7 @@ A dependency manifest and a container recipe are pinned in the archived release,
 This appendix is specific to the blindspot model and is not part of the model-agnostic evaluation contract of Appendix~\ref{app:contract}. It records the canonical model architecture and training configuration that produce the test-set reconstruction in Section~\ref{sec:results_denoising} and the numerical blindspot integrity audit that rules out leakage of $y_{\lambda}$ into $\hat{x}_{\lambda}$ in the reported network, in support of Section~\ref{sec:blindspot_algorithm} and the central-pixel exclusion claim in Section~\ref{sec:results_denoising}.
 
 \paragraph{Canonical model and training configuration.}
-The denoiser is a one-dimensional convolutional U-Net (Table~\ref{tab:training_config}) that maps a single-channel noisy spectrum, concatenated with the broadcast scalar $\bar{\sigma}$ as a second input channel, to a single-channel reconstruction $\hat{x}$. The backbone uses nine convolutional layers with width $48$ and kernel size $25$, batch normalization, and residual aggregation between matching encoder and decoder levels; the output is a single-head $\hat{x}$ point estimate, with no auxiliary $\sigma$ output head and no probabilistic output branch. The blindspot property is enforced by combining shifted causal convolutions on each side of the spectrum, as in Algorithm~\ref{alg:blindspot_forward}. Optimization uses Adam with $(\beta_1,\beta_2,\epsilon)=(0.9,0.999,10^{-8})$ and zero weight decay, initial learning rate $10^{-4}$, and a cosine schedule decaying to $10^{-6}$ over the full training horizon. Training uses $200$ epochs, batch size $128$, and a single fixed training seed; the early-stopping patience is $30$ epochs and the reported model is selected as the validation-best by reconstruction S/N before any test-set evaluation. At each training step, $85\%$ of wavelength bins are sampled at random and contribute to the noisy-target loss, while the remaining bins are held out from the loss for that step; this stochastic loss-mask is the standard blindspot-training mechanism for decorrelating successive predicted bins and does not modify the network input or the test-set evaluation, which is computed at every wavelength.
+The denoiser is a one-dimensional convolutional U-Net (Table~\ref{tab:training_config}) that maps a single-channel noisy spectrum, concatenated with the broadcast scalar $\bar{\sigma}$ as a second input channel, to a single-channel reconstruction $\hat{x}$. The backbone uses nine convolutional layers with width $48$ and kernel size $25$, batch normalization, and residual aggregation between matching encoder and decoder levels; the output is a single-head $\hat{x}$ point estimate, with no auxiliary $\sigma$ output head and no probabilistic output branch. The blindspot property is enforced by combining shifted causal convolutions on each side of the spectrum, as described in Section~\ref{sec:blindspot_algorithm}. Optimization uses Adam with $(\beta_1,\beta_2,\epsilon)=(0.9,0.999,10^{-8})$ and zero weight decay, initial learning rate $10^{-4}$, and a cosine schedule decaying to $10^{-6}$ over the full training horizon. Training uses $200$ epochs, batch size $128$, and a single fixed training seed; the early-stopping patience is $30$ epochs and the reported model is selected as the validation-best by reconstruction RMSE before any test-set evaluation. At each training step, $85\%$ of wavelength bins are sampled at random and contribute to the noisy-target loss, while the remaining bins are held out from the loss for that step; this stochastic loss-mask is the standard blindspot-training mechanism for decorrelating successive predicted bins and does not modify the network input or the test-set evaluation, which is computed at every wavelength.
 
 % ROLE: reproducibility record for the reported model checkpoint and training configuration.
 \begin{table}[ht]
@@ -698,7 +668,7 @@ Early-stopping patience & $30$ epochs \\
 Training-time loss-mask ratio & $0.85$ (per step, stochastic) \\
 Training seed & $0$ (fixed) \\
 Validation noise seed & fixed across training \\
-Checkpoint selection rule & validation-best reconstruction S/N \\
+Checkpoint selection rule & validation-best reconstruction RMSE \\
 \hline
 \end{tabular}
 \end{table}
@@ -718,14 +688,10 @@ Perturbation of $y_{i}$ & Pixels tested & Spectra & Max $|\Delta|$ \\
 \hline
 Cross-spectrum permutation & $3$ & $64$ & $1.19\times10^{-7}$ \\
 Per-spectrum mean replacement & $3$ & $64$ & $1.49\times10^{-7}$ \\
-Cross-spectrum permutation & $3$ & $64$ & $1.19\times10^{-7}$ \\
-Per-spectrum mean replacement & $3$ & $64$ & $1.49\times10^{-7}$ \\
 \hline
 \end{tabular}
 \end{table}
 
-\paragraph{Central-visible copy-shortcut control.}
-The blindspot and supervised rows of Table~\ref{tab:main_baselines} are paired with a training control that removes the blindspot exclusion. A variant of the same network that keeps the target bin $y_{\lambda}$ in its receptive field, trained against the same noisy target, learns to copy that bin: its test-split mean reconstruction RMSE is $0.084$, the noisy-input scale, against $0.0053$ for the blindspot. The collapse confirms that the reconstruction gain comes from excluding the target bin and not from ordinary same-input regression, complementing the architectural leakage audit above. The blindspot rows themselves are reported in Table~\ref{tab:main_baselines}: the scalar noise condition $\bar{\sigma}$ lowers the mean reconstruction RMSE from $0.0055$ to $0.0053$, and the supervised clean-target U-Net reference reaches $0.0043$.
 \paragraph{Central-visible copy-shortcut control.}
 The blindspot and supervised rows of Table~\ref{tab:main_baselines} are paired with a training control that removes the blindspot exclusion. A variant of the same network that keeps the target bin $y_{\lambda}$ in its receptive field, trained against the same noisy target, learns to copy that bin: its test-split mean reconstruction RMSE is $0.084$, the noisy-input scale, against $0.0053$ for the blindspot. The collapse confirms that the reconstruction gain comes from excluding the target bin and not from ordinary same-input regression, complementing the architectural leakage audit above. The blindspot rows themselves are reported in Table~\ref{tab:main_baselines}: the scalar noise condition $\bar{\sigma}$ lowers the mean reconstruction RMSE from $0.0055$ to $0.0053$, and the supervised clean-target U-Net reference reaches $0.0043$.
 
@@ -735,63 +701,35 @@ The blindspot and supervised rows of Table~\ref{tab:main_baselines} are paired w
 This appendix records the validation grids for the non-neural reference methods of Table~\ref{tab:main_baselines}, the consolidated cross-method result ledger, and the fixed-basis explanation used to interpret the PCA-family baselines. Context-recoverability measurements are separated into Appendix~\ref{app:context_recoverability} so that baseline fairness and the small-$\gamma$ premise have distinct evidentiary roles.
 
 \paragraph{Baseline tuning grids.}
-Table~\ref{tab:baseline_grids} lists the validation grid searched for each non-neural reference method. Within each family the configuration that maximizes the linear-form reconstruction S/N of Equation~\ref{eq:snr_def} on the validation split at a fixed validation noise seed is the configuration evaluated on the test split in Table~\ref{tab:main_baselines} and Table~\ref{tab:appendix_baselines}; the same selection rule is applied to every family so the two test-split tables are internally comparable.
+Table~\ref{tab:baseline_grids} lists the validation grid searched for each non-neural reference method. Within each family the configuration that minimizes validation-split reconstruction RMSE at a fixed validation noise seed is the configuration evaluated on the test split in Table~\ref{tab:main_baselines}; the same selection rule is applied to every family so the test-split comparisons are internally comparable.
 
 \begin{table}
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
-\caption{Validation grids searched for the non-neural reference methods. The selection rule for every family is the validation-split reconstruction S/N maximizer at a fixed validation noise seed, before any test-set evaluation. The realized winning rank for the PCA-family rows is listed; the realized winning configurations for the smoother families correspond to the rows reported in Table~\ref{tab:main_baselines} (Wavelet BayesShrink) and Table~\ref{tab:appendix_baselines} (Savitzky--Golay, Gaussian smoothing, median filter).}
+\caption{Validation grids searched for the non-neural reference methods. The selection rule for every family is the validation-split reconstruction-RMSE minimizer at a fixed validation noise seed, before any test-set evaluation. The realized winning rank for the PCA-family rows is listed.}
 \label{tab:baseline_grids}
 \begin{tabular}{lll}
 \hline
 Family & Grid searched & Selection rule \\
 \hline
-Savitzky--Golay & window $\in\{3,5,7,9,11\}$, order $\in\{1,2,3\}$ & validation S/N maximizer \\
-Gaussian smoothing & $\sigma\in\{1,2,3,5,7\}$ pixels & validation S/N maximizer \\
-Median filter & window $\in\{3,5,7\}$ pixels & validation S/N maximizer \\
-Wavelet BayesShrink & db4, level $\in\{3,4,5\}$ & validation S/N maximizer \\
-Noisy-PCA & $k\in\{16,32,64,128,256,512\}$, noisy-train fit & validation S/N maximizer ($k=16$) \\
-Clean-template PCA reference & $k\in\{16,32,64,128\}$, clean-template fit & validation S/N maximizer ($k=16$) \\
+Savitzky--Golay & window $\in\{3,5,7,9,11\}$, order $\in\{1,2,3\}$ & validation RMSE minimizer \\
+Gaussian smoothing & $\sigma\in\{1,2,3,5,7\}$ pixels & validation RMSE minimizer \\
+Median filter & window $\in\{3,5,7\}$ pixels & validation RMSE minimizer \\
+Wavelet BayesShrink & db4, level $\in\{3,4,5\}$ & validation RMSE minimizer \\
+Noisy-PCA & $k\in\{16,32,64,128,256,512\}$, noisy-train fit & validation RMSE minimizer ($k=16$) \\
+Clean-template PCA reference & $k\in\{16,32,64,128\}$, clean-template fit & validation RMSE minimizer ($k=16$) \\
 \hline
 \end{tabular}
 \end{table}
 
 \paragraph{Consolidated per-method results.}
-Reconstruction signal-to-noise rises with estimator capacity, but the downstream $\log g$ readout separates methods that preserve label information from those that only raise pixel S/N: the principal-component references reach the highest reconstruction S/N among the non-neural methods yet leave the calibrator no more accurate than the noisy input, whereas the blindspot moves the calibrator most of the way to the clean-input scale.
+Reconstruction RMSE decreases with estimator capacity, but the downstream $\log g$ estimator separates methods that preserve label information from methods that only reduce pixel error: the principal-component references reach low reconstruction RMSE among the non-neural methods yet reduce the fixed calibrator's downstream accuracy relative to the noisy-input row, whereas the blindspot moves the calibrator most of the way to the clean-input scale.
 
-% % ROLE: single full cross-method ledger; other appendix tables should not duplicate this role.
-% \begin{table}[ht]
-% \centering
-% \footnotesize
-% \setlength{\tabcolsep}{4.5pt}
-% \caption{Consolidated per-method results on the matched-redshift test set ($z_1$; $10{,}000$ spectra). Reconstruction columns give the mean and median per-spectrum S/N (Equation~\ref{eq:snr_def}) with the $5$--$95\%$ range. The Ca\,\textsc{ii} EW column is the across-spectra mean of the per-spectrum triplet-averaged equivalent-width relative error; the polarity column is the continuum-relative flip rate. Robust per-line Ca\,\textsc{ii} medians with bootstrap intervals are in Table~\ref{tab:main_results}. The $\log g$ columns give the clean-trained calibrator residual scatter $\sigma_{\rm rob}$ (dex; smaller is better) and $R^2$, evaluated without refitting (Section~\ref{sec:results_downstream_logg}). Clean reference, clean-template PCA, and the supervised U-Net use clean data and are non-deployable; em-dashes mark quantities not computed for a row.}
-% \footnotesize
-% \setlength{\tabcolsep}{4.5pt}
-% \caption{Consolidated per-method results on the matched-redshift test set ($z_1$; $10{,}000$ spectra). Reconstruction columns give the mean and median per-spectrum S/N (Equation~\ref{eq:snr_def}) with the $5$--$95\%$ range. The Ca\,\textsc{ii} EW column is the across-spectra mean of the per-spectrum triplet-averaged equivalent-width relative error; the polarity column is the continuum-relative flip rate. Robust per-line Ca\,\textsc{ii} medians with bootstrap intervals are in Table~\ref{tab:main_results}. The $\log g$ columns give the clean-trained calibrator residual scatter $\sigma_{\rm rob}$ (dex; smaller is better) and $R^2$, evaluated without refitting (Section~\ref{sec:results_downstream_logg}). Clean reference, clean-template PCA, and the supervised U-Net use clean data and are non-deployable; em-dashes mark quantities not computed for a row.}
-% \label{tab:appendix_baselines}
-% \begin{tabular}{lcccccc}
-% \begin{tabular}{lcccccc}
-% \hline
-% Method & Mean S/N & Median S/N [$5$,$95$] & Ca\,\textsc{ii} EW & Polarity & $\log g\ \sigma_{\rm rob}$ & $\log g\ R^2$ \\
-% \hline
-% Clean reference & --- & --- & --- & --- & $0.22$ & $0.94$ \\
-% Noisy input & $7.6$ & $6.8$ [$3.1$,$14.6$] & $3.09$ & $0.282$ & $1.26$ & $0.01$ \\
-% Savitzky--Golay & $20.8$ & $19.1$ [$9.7$,$38.2$] & $1.89$ & $0.121$ & $1.11$ & $0.10$ \\
-% Gaussian smoothing & $25.8$ & $23.1$ [$13.2$,$47.5$] & $1.49$ & $0.0842$ & $1.16$ & $0.05$ \\
-% Median filter & $15.7$ & $14.3$ [$6.7$,$29.1$] & $2.21$ & $0.168$ & $1.13$ & $0.04$ \\
-% Wavelet BayesShrink & $26.6$ & $24.2$ [$13.4$,$48.3$] & $1.50$ & $0.0804$ & $1.01$ & $0.13$ \\
-% Noisy-PCA, $k\!=\!16$ & $54.0$ & $51.0$ [$26.4$,$91.0$] & $1.09$ & $0.0184$ & $1.29$ & $-0.05$ \\
-% Clean-template PCA, $k\!=\!16$ & $55.7$ & $52.9$ [$27.1$,$93.0$] & $1.02$ & $0.0172$ & $1.28$ & $-0.05$ \\
-% \textbf{Blindspot (ours)} & $\mathbf{122}$ & $\mathbf{109}$ [$\mathbf{45}$,$\mathbf{246}$] & $\mathbf{0.51}$ & $\mathbf{0.003}$ & $\mathbf{0.80}$ & $\mathbf{0.46}$ \\
-% Supervised U-Net & $154$ & $136$ [$55$,$319$] & --- & --- & --- & --- \\
-% \hline
-% \end{tabular}
-% \end{table}
-
-\paragraph{Why the fixed-basis linear estimators saturate.} The reconstruction ceiling of the principal-component baselines in Table~\ref{tab:appendix_baselines} is a property of the estimator class, not of how the basis was tuned. A fixed-grid linear basis must spend rank on two demands at once. Each spectrum carries a radial velocity of up to $\pm300$~km/s (Table~\ref{tab:data_summary}), which slides its absorption lines by several resolution elements, and representing an arbitrary shift on a fixed wavelength grid requires many Fourier modes rather than a few stellar-parameter directions. The narrow line cores are themselves high-frequency, low-variance features that again demand high rank. Both pressures push toward a large basis. Yet at the faint-end per-pixel S/N of this sample, every added component admits more noise variance than line variance, so the reconstruction-error-optimal rank is small: validation selects $k=16$ across the search range $\{16,\dots,512\}$. The linear class is therefore caught in a bias--variance bind, where the rank the signal structure demands is the rank the noise forbids, and no choice of rank --- with or without access to clean training targets --- escapes it. This is why the clean-template reference, fit on noiseless spectra, still floors at a reconstruction RMSE of $0.011$. The blindspot estimator is not a fixed-basis projection: it predicts each bin from the local shape of its neighborhood with the center withheld, so its accuracy is set by the physical correlation length of the signal relative to the per-bin noise (Section~\ref{sec:theory}) rather than by a subspace dimension, and a global velocity shift leaves the learned line-shape-to-flux map unchanged.
+\paragraph{Why the fixed-basis linear estimators saturate.} The reconstruction ceiling of the principal-component baselines in Table~\ref{tab:main_baselines} is a property of the estimator class, not of how the basis was tuned. A fixed-grid linear basis must spend rank on two demands at once. Each spectrum carries a radial velocity of up to $\pm300$~km/s (Table~\ref{tab:data_summary}), which slides its absorption lines by several resolution elements, and representing an arbitrary shift on a fixed wavelength grid requires many Fourier modes rather than a few stellar-parameter directions. The narrow line cores are themselves high-frequency, low-variance features that again demand high rank. Both pressures push toward a large basis. Yet at the faint-end per-pixel S/N of this sample, every added component admits more noise variance than line variance, so the reconstruction-error-optimal rank is small: validation selects $k=16$ across the search range $\{16,\dots,512\}$. The linear class is therefore caught in a bias--variance bind, where the rank the signal structure demands is the rank the noise forbids, and no choice of rank --- with or without access to clean training targets --- escapes it. This is why the clean-template reference, fit on noiseless spectra, still floors at a reconstruction RMSE of $0.011$. The blindspot estimator is not a fixed-basis projection: it predicts each bin from the local shape of its neighborhood with the center withheld, so its accuracy is set by the physical correlation length of the signal relative to the per-bin noise (Section~\ref{sec:theory}) rather than by a subspace dimension, and a global velocity shift leaves the learned line-shape-to-flux map unchanged.
 
 \paragraph{Main-text small-$\gamma$ summary.}
+\label{app:context_recoverability}
 The compact context-variance summary that operationalizes the context-predictability premise of Section~\ref{sec:theory} is reported here because it is a scope condition for interpreting the blindspot result, not a separate main-text result.
 
 \begin{table}[ht]
@@ -858,19 +796,16 @@ Worst of three families & $2.81\times10^{-4}$ & $1.00\times10^{-3}$ & $6.70\time
 \section{Distributional Reconstruction and Line-Preservation Checks}
 \label{app:line_addenda}
 
-This appendix checks that the reconstruction-S/N gain of Section~\ref{sec:results_denoising} and the line-preservation gain of Section~\ref{sec:results_physical} are distributed across the test-set input-S/N range and across diagnostic lines, rather than driven by a small subset of spectra.
+This appendix checks that the reconstruction-RMSE reduction of Section~\ref{sec:results_denoising} and the line-preservation gain of Section~\ref{sec:results_physical} are distributed across the test-set input-S/N range and across diagnostic lines, rather than driven by a small subset of spectra.
 
 \paragraph{Full line-sensitive diagnostics.}
 Table~\ref{tab:main_results_full} reports the full-precision equivalent-width errors and paired-bootstrap confidence intervals summarized in compact form in Section~\ref{sec:results_physical}.
 
 % ROLE: full-precision and bootstrap support for the compact main line-preservation table.
-\begin{table}[htbp]
+\begin{table*}
 \centering
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\caption{Full line-sensitive reconstruction diagnostics on the test split. Equivalent-width entries are per-spectrum medians of the relative error in Equation~\ref{eq:ew_relative_error}; bracketed intervals on the four Ca\,\textsc{ii} rows are $95\%$ paired-bootstrap confidence intervals from $1000$ resamples over the $10{,}000$ test spectra, where the same resample indices are applied to the noisy and denoised columns so the $\Delta$ interval captures per-spectrum correlation. The \mbox{O$_2$} A-band rows are included as a stress test in a high-noise atmospheric window, not as the main-text reconstruction result; bootstrap intervals are not reported on the \mbox{O$_2$} auxiliary rows.}
-\caption{Full line-sensitive reconstruction diagnostics on the test split. Equivalent-width entries are per-spectrum medians of the relative error in Equation~\ref{eq:ew_relative_error}; bracketed intervals on the four Ca\,\textsc{ii} rows are $95\%$ paired-bootstrap confidence intervals from $1000$ resamples over the $10{,}000$ test spectra, where the same resample indices are applied to the noisy and denoised columns so the $\Delta$ interval captures per-spectrum correlation. The \mbox{O$_2$} A-band rows are included as a stress test in a high-noise atmospheric window, not as the main-text reconstruction result; bootstrap intervals are not reported on the \mbox{O$_2$} auxiliary rows.}
-\label{tab:main_results_full}
 \begin{tabular}{lccc}
 \hline
  & \textbf{Noisy input $y$} & \textbf{Blindspot output $\hat{x}$} & \textbf{$\Delta=\hat{x}-y$} \\
@@ -880,30 +815,14 @@ $\quad 8498$~\AA   & $0.737$ [$0.709$, $0.764$] & $\mathbf{0.121}$ [$\mathbf{0.1
 $\quad 8542$~\AA   & $0.328$ [$0.318$, $0.339$] & $\mathbf{0.098}$ [$\mathbf{0.095}$, $\mathbf{0.101}$] & $-0.230$ [$-0.241$, $-0.220$] \\
 $\quad 8662$~\AA   & $1.02$ [$0.983$, $1.066$] & $\mathbf{0.147}$ [$\mathbf{0.142}$, $\mathbf{0.151}$] & $-0.873$ [$-0.919$, $-0.838$] \\
 $\quad$Triplet mean & $0.695$ [$0.676$, $0.718$] & $\mathbf{0.122}$ [$\mathbf{0.119}$, $\mathbf{0.125}$] & $-0.573$ [$-0.595$, $-0.555$] \\
-$\quad 8498$~\AA   & $0.737$ [$0.709$, $0.764$] & $\mathbf{0.121}$ [$\mathbf{0.117}$, $\mathbf{0.126}$] & $-0.616$ [$-0.641$, $-0.590$] \\
-$\quad 8542$~\AA   & $0.328$ [$0.318$, $0.339$] & $\mathbf{0.098}$ [$\mathbf{0.095}$, $\mathbf{0.101}$] & $-0.230$ [$-0.241$, $-0.220$] \\
-$\quad 8662$~\AA   & $1.02$ [$0.983$, $1.066$] & $\mathbf{0.147}$ [$\mathbf{0.142}$, $\mathbf{0.151}$] & $-0.873$ [$-0.919$, $-0.838$] \\
-$\quad$Triplet mean & $0.695$ [$0.676$, $0.718$] & $\mathbf{0.122}$ [$\mathbf{0.119}$, $\mathbf{0.125}$] & $-0.573$ [$-0.595$, $-0.555$] \\
 \hline
-% polarity rows removed 2026-07-01 advisor meeting
 \multicolumn{4}{l}{\emph{Telluric \mbox{O$_2$} A-band hard window ($7590$--$7700$~\AA, $181$ pixels)}} \\
-$\quad$Window-restricted S/N, linear & $0.16$ & $\mathbf{3.6}$ & $+3.4$ \\
-$\quad$Mean relative EW degradation       & $22.2$ & $\mathbf{1.19}$ & $-21.0$ \\
 $\quad$Mean relative EW degradation       & $22.2$ & $\mathbf{1.19}$ & $-21.0$ \\
 \hline
 \end{tabular}
-\end{table}
-
-% === input--output S/N density plot (fig_snr_improvement_log) commented out per 2026-07-01 advisor meeting: output-S/N is not directly measurable (no per-pixel sigma on the denoised output); to be superseded by RMSE-based reporting. Kept for recovery. ===
-\iffalse
-% ROLE: distributional robustness of reconstruction S/N across input S/N.
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.6\linewidth]{figs/appendix/fig_snr_improvement_log.pdf}
-\caption{Joint density of per-spectrum input (noisy) and output (denoised) signal-to-noise ratio on the test set, on log--log axes. The two-dimensional density (hot colormap; KDE) is overlaid with low-density outliers as black points; the dotted diagonal marks the $y{=}x$ identity. The bulk lies above the diagonal across the full input-S/N decade, so the reconstruction gain is approximately log-uniform in input S/N rather than driven by any single S/N range.}
-\label{fig:appendix_snr_panel}
-\end{figure}
-\fi
+\caption{Full line-sensitive reconstruction diagnostics on the test split. Equivalent-width entries are per-spectrum medians of the relative error in Equation~\ref{eq:ew_relative_error}; bracketed intervals on the four Ca\,\textsc{ii} rows are $95\%$ paired-bootstrap confidence intervals from $1000$ resamples over the $10{,}000$ test spectra, where the same resample indices are applied to the noisy and denoised columns so the $\Delta$ interval captures per-spectrum correlation. The \mbox{O$_2$} A-band rows are included as a stress test in a high-noise atmospheric window, not as the main-text reconstruction result; bootstrap intervals are not reported on the \mbox{O$_2$} auxiliary rows.}
+\label{tab:main_results_full}
+\end{table*}
 
 % ROLE: distributional robustness of EW preservation across diagnostic lines and input S/N.
 \begin{figure}[ht]
@@ -923,28 +842,21 @@ This appendix provides the calibrator train-size stability check referenced in S
 The same clean-trained gradient-boosted regressor is refit at four training-size operating points, holding the test split and evaluation protocol fixed; only the calibrator's training-size hyperparameter changes between rows (Table~\ref{tab:downstream_logg_sweep}).
 
 % ROLE: robustness check that the logg transfer result is not a single training-size artifact.
-% \begin{table}[ht]
-% \centering
-% \small
-% \caption{Train-size stability of the $\log g$ calibrator. Each entry is the centered robust scatter $\sigma_{\rm rob}$ [dex] of the residual $\widehat{\log g}-\log g_{\rm true}$ on the same $5{,}000$-spectrum test set used in Table~\ref{tab:downstream_logg}. Smaller is better. The clean-input column improves monotonically with calibrator-training size, while the noisy and smoothed columns stay near the noisy-input scale; the blindspot column stays closer to the clean column than the noisy or smoothed columns at every training size, though its gap to the clean column widens as the clean column improves.}
-% \label{tab:downstream_logg_sweep}
-% \begin{tabular}{rcccc}
-% \begin{tabular}{rcccc}
-% \hline
-% $n_{\rm train}$ & Clean & Blindspot & Savitzky--Golay & Noisy \\
-% $n_{\rm train}$ & Clean & Blindspot & Savitzky--Golay & Noisy \\
-% \hline
-% $1{,}000$  & $0.68$ & $1.02$ & $1.12$ & $1.32$ \\
-% $3{,}000$  & $0.39$ & $0.90$ & $1.10$ & $1.29$ \\
-% $10{,}000$ & $0.27$ & $0.83$ & $1.09$ & $1.28$ \\
-% $30{,}000$ & $0.22$ & $0.80$ & $1.11$ & $1.26$ \\
-% $1{,}000$  & $0.68$ & $1.02$ & $1.12$ & $1.32$ \\
-% $3{,}000$  & $0.39$ & $0.90$ & $1.10$ & $1.29$ \\
-% $10{,}000$ & $0.27$ & $0.83$ & $1.09$ & $1.28$ \\
-% $30{,}000$ & $0.22$ & $0.80$ & $1.11$ & $1.26$ \\
-% \hline
-% \end{tabular}
-% \end{table}
+\begin{table}
+\centering
+\begin{tabular}{rcccc}
+\hline
+$n_{\rm train}$ & Clean & Blindspot & Savitzky--Golay & Noisy \\
+\hline
+$1{,}000$  & $0.68$ & $1.02$ & $1.12$ & $1.32$ \\
+$3{,}000$  & $0.39$ & $0.90$ & $1.10$ & $1.29$ \\
+$10{,}000$ & $0.27$ & $0.83$ & $1.09$ & $1.28$ \\
+$30{,}000$ & $0.22$ & $0.80$ & $1.11$ & $1.26$ \\
+\hline
+\end{tabular}
+\caption{Train-size stability of the $\log g$ calibrator. Each entry is the centered robust scatter $\sigma_{\rm rob}$ [dex] of the residual $\widehat{\log g}-\log g_{\rm true}$ on the same $5{,}000$-spectrum test set used in Table~\ref{tab:downstream_logg}. Smaller is better. The clean-input column improves monotonically with calibrator-training size, while the noisy and smoothed columns stay near the noisy-input scale; the blindspot column stays closer to the clean column than the noisy or smoothed columns at every training size, though its gap to the clean column widens as the clean column improves.}
+\label{tab:downstream_logg_sweep}
+\end{table}
 
 The sweep is consistent with stable clean-domain transfer at degraded fidelity: the blindspot column tracks the clean column more closely than the noisy or smoothed columns as the calibrator training size changes. This rules out the narrower reading that the gain in Table~\ref{tab:downstream_logg} is a special feature of the maximum-training-size operating point.
 
