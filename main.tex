@@ -906,6 +906,8 @@ $\quad$Mean relative EW degradation       & $22.2$ & $\mathbf{1.19}$ & $-21.0$ \
 \end{tabular}
 \end{table}
 
+% === input--output S/N density plot (fig_snr_improvement_log) commented out per 2026-07-01 advisor meeting: output-S/N is not directly measurable (no per-pixel sigma on the denoised output); to be superseded by RMSE-based reporting. Kept for recovery. ===
+\iffalse
 % ROLE: distributional robustness of reconstruction S/N across input S/N.
 \begin{figure}[ht]
 \centering
@@ -913,6 +915,7 @@ $\quad$Mean relative EW degradation       & $22.2$ & $\mathbf{1.19}$ & $-21.0$ \
 \caption{Joint density of per-spectrum input (noisy) and output (denoised) signal-to-noise ratio on the test set, on log--log axes. The two-dimensional density (hot colormap; KDE) is overlaid with low-density outliers as black points; the dotted diagonal marks the $y{=}x$ identity. The bulk lies above the diagonal across the full input-S/N decade, so the reconstruction gain is approximately log-uniform in input S/N rather than driven by any single S/N range.}
 \label{fig:appendix_snr_panel}
 \end{figure}
+\fi
 
 % ROLE: distributional robustness of EW preservation across diagnostic lines and input S/N.
 \begin{figure}[ht]
@@ -922,7 +925,7 @@ $\quad$Mean relative EW degradation       & $22.2$ & $\mathbf{1.19}$ & $-21.0$ \
 \label{fig:appendix_ew_panel}
 \end{figure}
 
-Figure~\ref{fig:appendix_snr_panel} resolves the test-set aggregate reconstruction S/N of Section~\ref{sec:results_denoising} into the joint distribution of per-spectrum input and output values, while Figure~\ref{fig:appendix_ew_panel} resolves the line-preservation result of Section~\ref{sec:results_physical} into the dispersion of the EW relative error across diagnostic features as input S/N varies. Together they show that neither the S/N gain nor the EW-error reduction is dominated by a narrow input-S/N subset: the input--output S/N density lies above the identity across the full input-S/N decade, and the dispersion of the EW relative error after denoising is reduced over the entire diagnostic feature set rather than for a single Ca\,\textsc{ii} core or a single S/N bin.
+Figure~\ref{fig:appendix_ew_panel} resolves the line-preservation result of Section~\ref{sec:results_physical} into the dispersion of the EW relative error across diagnostic features as input S/N varies. It shows that the EW-error reduction is not dominated by a narrow input-S/N subset: the dispersion of the EW relative error after denoising is reduced over the entire diagnostic feature set rather than for a single Ca\,\textsc{ii} core or a single S/N bin.
 
 \section{Clean-Trained Gravity Calibrator Checks}
 \label{app:downstream_logg}
