@@ -9,3 +9,5 @@
 *.toc
 *.pdf
 .overleaf-reports/
+.abstract-lint-active
+qa/
