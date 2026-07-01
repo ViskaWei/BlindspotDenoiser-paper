@@ -765,34 +765,34 @@ Clean-template PCA reference & $k\in\{16,32,64,128\}$, clean-template fit & vali
 \paragraph{Consolidated per-method results.}
 Reconstruction signal-to-noise rises with estimator capacity, but the downstream $\log g$ readout separates methods that preserve label information from those that only raise pixel S/N: the principal-component references reach the highest reconstruction S/N among the non-neural methods yet leave the calibrator no more accurate than the noisy input, whereas the blindspot moves the calibrator most of the way to the clean-input scale.
 
-% ROLE: single full cross-method ledger; other appendix tables should not duplicate this role.
-\begin{table}[ht]
-\centering
-\footnotesize
-\setlength{\tabcolsep}{4.5pt}
-\caption{Consolidated per-method results on the matched-redshift test set ($z_1$; $10{,}000$ spectra). Reconstruction columns give the mean and median per-spectrum S/N (Equation~\ref{eq:snr_def}) with the $5$--$95\%$ range. The Ca\,\textsc{ii} EW column is the across-spectra mean of the per-spectrum triplet-averaged equivalent-width relative error; the polarity column is the continuum-relative flip rate. Robust per-line Ca\,\textsc{ii} medians with bootstrap intervals are in Table~\ref{tab:main_results}. The $\log g$ columns give the clean-trained calibrator residual scatter $\sigma_{\rm rob}$ (dex; smaller is better) and $R^2$, evaluated without refitting (Section~\ref{sec:results_downstream_logg}). Clean reference, clean-template PCA, and the supervised U-Net use clean data and are non-deployable; em-dashes mark quantities not computed for a row.}
-\footnotesize
-\setlength{\tabcolsep}{4.5pt}
-\caption{Consolidated per-method results on the matched-redshift test set ($z_1$; $10{,}000$ spectra). Reconstruction columns give the mean and median per-spectrum S/N (Equation~\ref{eq:snr_def}) with the $5$--$95\%$ range. The Ca\,\textsc{ii} EW column is the across-spectra mean of the per-spectrum triplet-averaged equivalent-width relative error; the polarity column is the continuum-relative flip rate. Robust per-line Ca\,\textsc{ii} medians with bootstrap intervals are in Table~\ref{tab:main_results}. The $\log g$ columns give the clean-trained calibrator residual scatter $\sigma_{\rm rob}$ (dex; smaller is better) and $R^2$, evaluated without refitting (Section~\ref{sec:results_downstream_logg}). Clean reference, clean-template PCA, and the supervised U-Net use clean data and are non-deployable; em-dashes mark quantities not computed for a row.}
-\label{tab:appendix_baselines}
-\begin{tabular}{lcccccc}
-\begin{tabular}{lcccccc}
-\hline
-Method & Mean S/N & Median S/N [$5$,$95$] & Ca\,\textsc{ii} EW & Polarity & $\log g\ \sigma_{\rm rob}$ & $\log g\ R^2$ \\
-\hline
-Clean reference & --- & --- & --- & --- & $0.22$ & $0.94$ \\
-Noisy input & $7.6$ & $6.8$ [$3.1$,$14.6$] & $3.09$ & $0.282$ & $1.26$ & $0.01$ \\
-Savitzky--Golay & $20.8$ & $19.1$ [$9.7$,$38.2$] & $1.89$ & $0.121$ & $1.11$ & $0.10$ \\
-Gaussian smoothing & $25.8$ & $23.1$ [$13.2$,$47.5$] & $1.49$ & $0.0842$ & $1.16$ & $0.05$ \\
-Median filter & $15.7$ & $14.3$ [$6.7$,$29.1$] & $2.21$ & $0.168$ & $1.13$ & $0.04$ \\
-Wavelet BayesShrink & $26.6$ & $24.2$ [$13.4$,$48.3$] & $1.50$ & $0.0804$ & $1.01$ & $0.13$ \\
-Noisy-PCA, $k\!=\!16$ & $54.0$ & $51.0$ [$26.4$,$91.0$] & $1.09$ & $0.0184$ & $1.29$ & $-0.05$ \\
-Clean-template PCA, $k\!=\!16$ & $55.7$ & $52.9$ [$27.1$,$93.0$] & $1.02$ & $0.0172$ & $1.28$ & $-0.05$ \\
-\textbf{Blindspot (ours)} & $\mathbf{122}$ & $\mathbf{109}$ [$\mathbf{45}$,$\mathbf{246}$] & $\mathbf{0.51}$ & $\mathbf{0.003}$ & $\mathbf{0.80}$ & $\mathbf{0.46}$ \\
-Supervised U-Net & $154$ & $136$ [$55$,$319$] & --- & --- & --- & --- \\
-\hline
-\end{tabular}
-\end{table}
+% % ROLE: single full cross-method ledger; other appendix tables should not duplicate this role.
+% \begin{table}[ht]
+% \centering
+% \footnotesize
+% \setlength{\tabcolsep}{4.5pt}
+% \caption{Consolidated per-method results on the matched-redshift test set ($z_1$; $10{,}000$ spectra). Reconstruction columns give the mean and median per-spectrum S/N (Equation~\ref{eq:snr_def}) with the $5$--$95\%$ range. The Ca\,\textsc{ii} EW column is the across-spectra mean of the per-spectrum triplet-averaged equivalent-width relative error; the polarity column is the continuum-relative flip rate. Robust per-line Ca\,\textsc{ii} medians with bootstrap intervals are in Table~\ref{tab:main_results}. The $\log g$ columns give the clean-trained calibrator residual scatter $\sigma_{\rm rob}$ (dex; smaller is better) and $R^2$, evaluated without refitting (Section~\ref{sec:results_downstream_logg}). Clean reference, clean-template PCA, and the supervised U-Net use clean data and are non-deployable; em-dashes mark quantities not computed for a row.}
+% \footnotesize
+% \setlength{\tabcolsep}{4.5pt}
+% \caption{Consolidated per-method results on the matched-redshift test set ($z_1$; $10{,}000$ spectra). Reconstruction columns give the mean and median per-spectrum S/N (Equation~\ref{eq:snr_def}) with the $5$--$95\%$ range. The Ca\,\textsc{ii} EW column is the across-spectra mean of the per-spectrum triplet-averaged equivalent-width relative error; the polarity column is the continuum-relative flip rate. Robust per-line Ca\,\textsc{ii} medians with bootstrap intervals are in Table~\ref{tab:main_results}. The $\log g$ columns give the clean-trained calibrator residual scatter $\sigma_{\rm rob}$ (dex; smaller is better) and $R^2$, evaluated without refitting (Section~\ref{sec:results_downstream_logg}). Clean reference, clean-template PCA, and the supervised U-Net use clean data and are non-deployable; em-dashes mark quantities not computed for a row.}
+% \label{tab:appendix_baselines}
+% \begin{tabular}{lcccccc}
+% \begin{tabular}{lcccccc}
+% \hline
+% Method & Mean S/N & Median S/N [$5$,$95$] & Ca\,\textsc{ii} EW & Polarity & $\log g\ \sigma_{\rm rob}$ & $\log g\ R^2$ \\
+% \hline
+% Clean reference & --- & --- & --- & --- & $0.22$ & $0.94$ \\
+% Noisy input & $7.6$ & $6.8$ [$3.1$,$14.6$] & $3.09$ & $0.282$ & $1.26$ & $0.01$ \\
+% Savitzky--Golay & $20.8$ & $19.1$ [$9.7$,$38.2$] & $1.89$ & $0.121$ & $1.11$ & $0.10$ \\
+% Gaussian smoothing & $25.8$ & $23.1$ [$13.2$,$47.5$] & $1.49$ & $0.0842$ & $1.16$ & $0.05$ \\
+% Median filter & $15.7$ & $14.3$ [$6.7$,$29.1$] & $2.21$ & $0.168$ & $1.13$ & $0.04$ \\
+% Wavelet BayesShrink & $26.6$ & $24.2$ [$13.4$,$48.3$] & $1.50$ & $0.0804$ & $1.01$ & $0.13$ \\
+% Noisy-PCA, $k\!=\!16$ & $54.0$ & $51.0$ [$26.4$,$91.0$] & $1.09$ & $0.0184$ & $1.29$ & $-0.05$ \\
+% Clean-template PCA, $k\!=\!16$ & $55.7$ & $52.9$ [$27.1$,$93.0$] & $1.02$ & $0.0172$ & $1.28$ & $-0.05$ \\
+% \textbf{Blindspot (ours)} & $\mathbf{122}$ & $\mathbf{109}$ [$\mathbf{45}$,$\mathbf{246}$] & $\mathbf{0.51}$ & $\mathbf{0.003}$ & $\mathbf{0.80}$ & $\mathbf{0.46}$ \\
+% Supervised U-Net & $154$ & $136$ [$55$,$319$] & --- & --- & --- & --- \\
+% \hline
+% \end{tabular}
+% \end{table}
 
 \paragraph{Why the fixed-basis linear estimators saturate.} The reconstruction ceiling of the principal-component baselines in Table~\ref{tab:appendix_baselines} is a property of the estimator class, not of how the basis was tuned. A fixed-grid linear basis must spend rank on two demands at once. Each spectrum carries a radial velocity of up to $\pm300$~km/s (Table~\ref{tab:data_summary}), which slides its absorption lines by several resolution elements, and representing an arbitrary shift on a fixed wavelength grid requires many Fourier modes rather than a few stellar-parameter directions. The narrow line cores are themselves high-frequency, low-variance features that again demand high rank. Both pressures push toward a large basis. Yet at the faint-end per-pixel S/N of this sample, every added component admits more noise variance than line variance, so the reconstruction-S/N-optimal rank is small: validation selects $k=16$ across the search range $\{16,\dots,512\}$. The linear class is therefore caught in a bias--variance bind, where the rank the signal structure demands is the rank the noise forbids, and no choice of rank --- with or without access to clean training targets --- escapes it. This is why the clean-template reference, fit on noiseless spectra, still reaches only $55.7$. The blindspot estimator is not a fixed-basis projection: it predicts each bin from the local shape of its neighborhood with the center withheld, so its accuracy is set by the physical correlation length of the signal relative to the per-bin noise (Section~\ref{sec:theory}) rather than by a subspace dimension, and a global velocity shift leaves the learned line-shape-to-flux map unchanged.
 
@@ -932,28 +932,28 @@ This appendix provides the calibrator train-size stability check referenced in S
 The same clean-trained gradient-boosted regressor is refit at four training-size operating points, holding the test split and evaluation protocol fixed; only the calibrator's training-size hyperparameter changes between rows (Table~\ref{tab:downstream_logg_sweep}).
 
 % ROLE: robustness check that the logg transfer result is not a single training-size artifact.
-\begin{table}[ht]
-\centering
-\small
-\caption{Train-size stability of the $\log g$ calibrator. Each entry is the centered robust scatter $\sigma_{\rm rob}$ [dex] of the residual $\widehat{\log g}-\log g_{\rm true}$ on the same $5{,}000$-spectrum test set used in Table~\ref{tab:downstream_logg}. Smaller is better. The clean-input column improves monotonically with calibrator-training size, while the noisy and smoothed columns stay near the noisy-input scale; the blindspot column stays closer to the clean column than the noisy or smoothed columns at every training size, though its gap to the clean column widens as the clean column improves.}
-\label{tab:downstream_logg_sweep}
-\begin{tabular}{rcccc}
-\begin{tabular}{rcccc}
-\hline
-$n_{\rm train}$ & Clean & Blindspot & Savitzky--Golay & Noisy \\
-$n_{\rm train}$ & Clean & Blindspot & Savitzky--Golay & Noisy \\
-\hline
-$1{,}000$  & $0.68$ & $1.02$ & $1.12$ & $1.32$ \\
-$3{,}000$  & $0.39$ & $0.90$ & $1.10$ & $1.29$ \\
-$10{,}000$ & $0.27$ & $0.83$ & $1.09$ & $1.28$ \\
-$30{,}000$ & $0.22$ & $0.80$ & $1.11$ & $1.26$ \\
-$1{,}000$  & $0.68$ & $1.02$ & $1.12$ & $1.32$ \\
-$3{,}000$  & $0.39$ & $0.90$ & $1.10$ & $1.29$ \\
-$10{,}000$ & $0.27$ & $0.83$ & $1.09$ & $1.28$ \\
-$30{,}000$ & $0.22$ & $0.80$ & $1.11$ & $1.26$ \\
-\hline
-\end{tabular}
-\end{table}
+% \begin{table}[ht]
+% \centering
+% \small
+% \caption{Train-size stability of the $\log g$ calibrator. Each entry is the centered robust scatter $\sigma_{\rm rob}$ [dex] of the residual $\widehat{\log g}-\log g_{\rm true}$ on the same $5{,}000$-spectrum test set used in Table~\ref{tab:downstream_logg}. Smaller is better. The clean-input column improves monotonically with calibrator-training size, while the noisy and smoothed columns stay near the noisy-input scale; the blindspot column stays closer to the clean column than the noisy or smoothed columns at every training size, though its gap to the clean column widens as the clean column improves.}
+% \label{tab:downstream_logg_sweep}
+% \begin{tabular}{rcccc}
+% \begin{tabular}{rcccc}
+% \hline
+% $n_{\rm train}$ & Clean & Blindspot & Savitzky--Golay & Noisy \\
+% $n_{\rm train}$ & Clean & Blindspot & Savitzky--Golay & Noisy \\
+% \hline
+% $1{,}000$  & $0.68$ & $1.02$ & $1.12$ & $1.32$ \\
+% $3{,}000$  & $0.39$ & $0.90$ & $1.10$ & $1.29$ \\
+% $10{,}000$ & $0.27$ & $0.83$ & $1.09$ & $1.28$ \\
+% $30{,}000$ & $0.22$ & $0.80$ & $1.11$ & $1.26$ \\
+% $1{,}000$  & $0.68$ & $1.02$ & $1.12$ & $1.32$ \\
+% $3{,}000$  & $0.39$ & $0.90$ & $1.10$ & $1.29$ \\
+% $10{,}000$ & $0.27$ & $0.83$ & $1.09$ & $1.28$ \\
+% $30{,}000$ & $0.22$ & $0.80$ & $1.11$ & $1.26$ \\
+% \hline
+% \end{tabular}
+% \end{table}
 
 The sweep is consistent with stable clean-domain transfer at degraded fidelity: the blindspot column tracks the clean column more closely than the noisy or smoothed columns as the calibrator training size changes. This rules out the narrower reading that the gain in Table~\ref{tab:downstream_logg} is a special feature of the maximum-training-size operating point.
 
