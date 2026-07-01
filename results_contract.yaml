@@ -186,7 +186,7 @@ subsections:
       - paragraph_id: results-3-line-preservation-diagnostics.p2
         section_id: results-3-line-preservation-diagnostics
         reader_question: |
-          What do the Ca II, polarity, and O2 diagnostics jointly show?
+          What do the Ca II and O2 diagnostics jointly show?
         role: finding_update
         claim_id: C3
         evidence_id: sec:results_physical
@@ -237,7 +237,7 @@ display_plan:
   - display_id: tab:main_results
     kind: table
     subsection_id: results-3-line-preservation-diagnostics
-    function: per-line Ca II EW error, polarity flips, and O2 window diagnostics
+    function: per-line Ca II EW error and O2 window diagnostics
   - display_id: fig:caII_zoom
     kind: figure
     subsection_id: results-3-line-preservation-diagnostics
@@ -263,8 +263,8 @@ claim_chain:
   - claim_id: C3
     evidence_id: sec:results_physical
     rules_out: |
-      The aggregate reconstruction-S/N gain is not delivered by continuum filling (Ca II EW errors fall by ~5x; polarity flips drop by ~100x; O2 window-restricted S/N rises rather than collapses).
+      The aggregate reconstruction-S/N gain is not delivered by continuum filling (Ca II EW errors fall by ~5x; O2 window-restricted S/N rises rather than collapses).
     scope_limit: |
-      Continuum-normalized, medium-resolution, late-type BOSZ/PFS-like spectra at magnitude 20.5-22.5 under independent zero-mean per-pixel noise; line measurements use fixed EW windows and a continuum-relative polarity statistic, not absolute spectrophotometry.
+      Continuum-normalized, medium-resolution, late-type BOSZ/PFS-like spectra at magnitude 20.5-22.5 under independent zero-mean per-pixel noise; line measurements use fixed EW windows, not absolute spectrophotometry.
 residue_signature: |
   After Results, the reader carries: a 16x reconstruction-S/N gain on a frozen low-S/N benchmark; the same gain reads through to a clean-trained log g calibrator that no smoother can reach; the absorption-line structure that the calibrator relies on is preserved rather than filled. All three findings are scoped to a continuum-normalized late-type BOSZ/PFS-like simulator with independent per-pixel noise.
