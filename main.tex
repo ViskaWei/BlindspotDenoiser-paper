@@ -1,6 +1,7 @@
 \documentclass[numerical]{aastex7}
 \usepackage{amssymb, amsmath}
 \usepackage{subcaption}
+\usepackage{placeins}
 \usepackage{xcolor}
 \usepackage{tcolorbox}
 \setcitestyle{numbers,square,comma,sort&compress}
@@ -124,7 +125,7 @@ Our contributions are:
     \item A canonical simulated target support consisting of continuum-normalized BOSZ \citep{Bohlin2017} spectra at $R\!\approx\!5000$ in the wavelength range of $7100$--$8850$~\AA and magnitude range of $20.5$--$22.5$. We used stellar parameters typical to late-type stars which are of the primary interest of Galactic Archaeology, and simulated a line spread function and noise characteristics typical to the Subaru Prime Focus Spectrograph (PFS) instrument.
     \item The main downstream result: a full-spectrum surface-gravity ($\log g$) estimator trained on clean spectra and evaluated without refitting transfers substantially better to blindspot-denoised spectra than to noisy or validation-tuned smoothed inputs, improving $\log g$ recovery for dwarf--giant separation in faint Galactic Archaeology samples; relative to the noisy input, the coefficient of determination rises from $0.01$ to $0.46$.
     \item Test-set comparisons against validation-tuned classical filters, noisy principal-component analysis (PCA), and a non-deployable clean-template PCA reference, with linear reconstruction S/N as the headline metric.
-    \item Line-sensitive and high-noise-window diagnostics evaluated alongside aggregate reconstruction error: Ca\,\textsc{ii} triplet equivalent-width (EW) error, continuum-relative polarity-flip rate, and an \mbox{O$_2$} A-band stress test in a high-noise atmospheric window.
+    \item Line-sensitive and high-noise-window diagnostics evaluated alongside aggregate reconstruction error: Ca\,\textsc{ii} triplet equivalent-width (EW) error and an \mbox{O$_2$} A-band stress test in a high-noise atmospheric window.
 \end{itemize}
 
 \section{Related Work}
@@ -214,6 +215,14 @@ The forward pass enforces one invariant: the feature used to predict the flux in
 \end{enumerate}
 \noindent\algkey{Output:} $\hat{x}$, where each $\hat{x}_{\lambda}$ depends on $y_{<\lambda}$ and $y_{>\lambda}$ but not on $y_{\lambda}$.
 \end{algorithmblock}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\linewidth]{figs/fig_architecture_blindspot.pdf}
+\caption{Simplified blindspot architecture. The red center value $y_{\lambda}$ is held out; the right context is implemented as reverse $\to$ shifted-causal $U_{\theta}$ $\to$ flip back, and $F_{\theta'}$ predicts $\hat{x}_{\lambda}$ from $u^L_{\lambda}$ and $u^R_{\lambda}$.}
+\label{fig:blindspot_architecture}
+\end{figure}
+\FloatBarrier
 
 \subsection{Identifiability and Recoverability}
 \label{sec:theory}
@@ -369,33 +378,15 @@ The relative EW error against the clean reference is
     \label{eq:ew_relative_error}
 \end{equation}
 
-Continuum-relative polarity uses a robust continuum-level reference for each normalized clean spectrum. For spectrum $s$, let $m_s=\operatorname{median}_{\lambda}x_s(\lambda)$ denote the median flux of the clean normalized spectrum; this median is a fixed reference level for the diagnostic, not a fitted physical continuum. The polarity-flip statistic measures whether an informative pixel in $y$ or $\hat{x}$ lies on the same side of $m_s$ as the clean flux. Unlike EW, which integrates a fixed line window, this statistic counts sign errors in local contrast and, therefore, detects line filling or contrast inversion at the pixel level. Define
-\begin{equation}
-\begin{aligned}
-    \mathcal{P}
-    &= \{(s,\lambda): |x_s(\lambda)-m_s|\geq0.02\,m_s\},\\
-    \mathcal{P}_{-}
-    &= \{(s,\lambda)\in\mathcal{P}:x_s(\lambda)<m_s\},\qquad
-    \mathcal{P}_{+}
-    = \{(s,\lambda)\in\mathcal{P}:x_s(\lambda)>m_s\},\\
-    p_{\mathrm{flip}}(X;\mathcal{Q})
-    &= \frac{1}{|\mathcal{Q}|}
-       \sum_{(s,\lambda)\in\mathcal{Q}}
-       \mathbf{1}\!\left[
-       \operatorname{sign}\!\bigl(X_s(\lambda)-m_s\bigr)
-       \neq
-       \operatorname{sign}\!\bigl(x_s(\lambda)-m_s\bigr)
-       \right],
-       \quad \mathcal{Q}\in\{\mathcal{P},\mathcal{P}_{-},\mathcal{P}_{+}\}.
-\end{aligned}
-\label{eq:polarity_flip}
-\end{equation}
-
-The four headline metrics are:
+% === polarity-flip diagnostic commented out per 2026-06-30 decision; kept for recovery ===
+% Continuum-relative polarity uses a robust continuum-level reference for each normalized clean spectrum. For spectrum $s$, let $m_s$ be the per-spectrum median flux of the clean normalized spectrum (a fixed reference level for the diagnostic, not a fitted physical continuum). The polarity-flip statistic measures whether an informative pixel in $y$ or $\hat{x}$ lies on the same side of $m_s$ as the clean flux, counting sign errors in local contrast (line filling / contrast inversion) at the pixel level.
+% [Equation eq:polarity_flip omitted here to avoid a heavy-LaTeX edit; the full original block is preserved in git HEAD:main.tex. It defined the informative set P = {(s,lambda): |x_s-m_s| >= 0.02 m_s}, the subsets P- (x<m) and P+ (x>m), and p_flip(X;Q) = fraction of pixels in Q where sign(X_s-m_s) != sign(x_s-m_s).]
+%
+The three headline metrics are:
 \begin{itemize}\itemsep0pt\topsep2pt
 \item \textbf{Reconstruction S/N}: Equation~\ref{eq:snr_def}, evaluated over all wavelength bins of the denoised spectrum.
 \item \textbf{Ca\,\textsc{ii} EW error}: Equation~\ref{eq:ew_relative_error} on $\mathcal{W}_{c}=\{\lambda:|\lambda-c|\leq6\,\text{\AA}\}$ for $c\in\{8498,8542,8662\}$~\AA. For each line we report the median over spectra. The ``triplet mean'' is the arithmetic mean of those three per-line medians, $\epsilon_{\mathrm{EW}}^{\mathrm{CaT}}=\tfrac{1}{3}\sum_{c\in\{8498,8542,8662\}}\operatorname{median}_{s}\,\epsilon_{\mathrm{EW}}(z_s;\mathcal{W}_{c})$.
-\item \textbf{Polarity-flip rate}: Equation~\ref{eq:polarity_flip}, reported on $\mathcal{P}$, $\mathcal{P}_{-}$, and $\mathcal{P}_{+}$.
+% polarity metric commented out (2026-06-30): originally "\item \textbf{Polarity-flip rate}: Equation eq:polarity_flip, reported on P, P-, and P+."
 \item \textbf{Telluric S/N}: Equation~\ref{eq:snr_def} restricted to
 $\mathcal{W}_{\mathrm{O}_2}=\{\lambda:7590\leq\lambda\leq7700\,\text{\AA}\}$. This window has very low input reconstruction S/N because the simulated observational variance is large in the \mbox{O$_2$} A-band, where sky-background and atmospheric-throughput terms dominate the noise scale relative to the normalized stellar signal. The diagnostic therefore tests whether the blindspot model can interpolate a high-noise atmospheric window under the independent, zero-mean simulator noise model. It should not be read as evidence that correlated real telluric or sky-subtraction residuals can be removed without additional modeling.
 \end{itemize}
@@ -459,14 +450,14 @@ Table~\ref{tab:main_baselines} separates the deployable noisy-only estimator fro
 \subsection{Line-preservation diagnostics}
 \label{sec:results_physical}
 
-Aggregate reconstruction S/N does not by itself exclude simple smoothing or line filling. We therefore test the reconstructed spectra with two line-sensitive diagnostics --- relative equivalent-width error on each Ca\,\textsc{ii} triplet line and continuum-relative polarity flips --- and, separately, a high-noise control in the sky-dominated \mbox{O$_2$} A-band, which is an atmospheric-window stress test rather than a stellar-line diagnostic (Table~\ref{tab:main_results}).
+Aggregate reconstruction S/N does not by itself exclude simple smoothing or line filling. We therefore test the reconstructed spectra with a line-sensitive diagnostic --- relative equivalent-width error on each Ca\,\textsc{ii} triplet line --- and, separately, a high-noise control in the sky-dominated \mbox{O$_2$} A-band, which is an atmospheric-window stress test rather than a stellar-line diagnostic (Table~\ref{tab:main_results}).
 
 % ROLE: compact main-text evidence against simple smoothing or line filling as the dominant explanation.
 \begin{table}[htbp]
 \centering
 \small
 \setlength{\tabcolsep}{5pt}
-\caption{Line-sensitive and high-noise-window reconstruction diagnostics on the test split. Equivalent-width entries use the relative error in Equation~\ref{eq:ew_relative_error}; polarity flips use Equation~\ref{eq:polarity_flip}. The \mbox{O$_2$} A-band rows are an atmospheric-window stress test, not a stellar-line diagnostic. Per-line bootstrap confidence intervals, polarity subgroups, and the Ca\,\textsc{ii} morphology panel are reported in Appendix~\ref{app:line_addenda}.}
+\caption{Line-sensitive and high-noise-window reconstruction diagnostics on the test split. Equivalent-width entries use the relative error in Equation~\ref{eq:ew_relative_error}. The \mbox{O$_2$} A-band rows are an atmospheric-window stress test, not a stellar-line diagnostic. Per-line bootstrap confidence intervals and the Ca\,\textsc{ii} morphology panel are reported in Appendix~\ref{app:line_addenda}.}
 \label{tab:main_results}
 \begin{tabular}{lcc}
 \hline
@@ -477,9 +468,10 @@ $\quad 8498$~\AA{} & $0.737$ & $\mathbf{0.121}$ \\
 $\quad 8542$~\AA{} & $0.328$ & $\mathbf{0.098}$ \\
 $\quad 8662$~\AA{} & $1.02$ & $\mathbf{0.147}$ \\
 \hline
-\multicolumn{3}{l}{\emph{Continuum-relative polarity flips}} \\
-$\quad$All non-continuum pixels & $0.276$ & $\mathbf{0.00302}$ \\
-\hline
+% polarity rows commented out (2026-06-30):
+% \multicolumn{3}{l}{\emph{Continuum-relative polarity flips}} \\
+% $\quad$All non-continuum pixels & $0.276$ & $\mathbf{0.00302}$ \\
+% \hline
 \multicolumn{3}{l}{\emph{\mbox{O$_2$} A-band window, $7590$--$7700$~\AA{}}} \\
 $\quad$Window-restricted reconstruction S/N & $0.16$ & $\mathbf{3.6}$ \\
 $\quad$Mean relative EW degradation & $22.2$ & $\mathbf{1.19}$ \\
@@ -546,7 +538,7 @@ This study shows that a one-dimensional blindspot denoiser can turn noisy late-t
 
 \begin{enumerate}
     \item \textbf{Reconstruction gain.} On the $10{,}000$-spectrum reconstruction test split, mean per-spectrum reconstruction S/N increases from $7.6$ for the noisy input to $122$ for the blindspot output. The central-visible control remains at $7.6$, supporting the interpretation that target-bin exclusion prevents a copy shortcut rather than merely adding network capacity.
-    \item \textbf{Line preservation.} Median Ca\,\textsc{ii} relative EW errors for the $8498$, $8542$, and $8662$~\AA{} lines fall to $0.121$, $0.098$, and $0.147$, while all non-continuum polarity flips fall from $0.276$ to $0.00302$. These diagnostics argue that the reconstruction retains local absorption-line contrast rather than only improving the global norm.
+    \item \textbf{Line preservation.} Median Ca\,\textsc{ii} relative EW errors for the $8498$, $8542$, and $8662$~\AA{} lines fall to $0.121$, $0.098$, and $0.147$. These diagnostics argue that the reconstruction retains local absorption-line contrast rather than only improving the global norm.
     \item \textbf{Estimator transfer.} For a full-spectrum surface-gravity estimator trained on clean spectra and evaluated without refitting on a disjoint $5{,}000$-spectrum test partition, robust scatter falls from $1.26$ to $0.80$~dex and $R^{2}$ rises from $0.01$ to $0.46$. This is an estimator-specific transfer gain, not full stellar-label recovery.
 \end{enumerate}
 
@@ -709,7 +701,7 @@ Reconstruction signal-to-noise rises with estimator capacity, but the downstream
 \centering
 \footnotesize
 \setlength{\tabcolsep}{4.5pt}
-\caption{Consolidated per-method results on the matched-redshift test set ($z_1$; $10{,}000$ spectra). Reconstruction columns give the mean and median per-spectrum S/N (Equation~\ref{eq:snr_def}) with the $5$--$95\%$ range. The Ca\,\textsc{ii} EW column is the across-spectra mean of the per-spectrum triplet-averaged equivalent-width relative error; the polarity column is the continuum-relative flip rate. Robust per-line Ca\,\textsc{ii} medians with bootstrap intervals are in Table~\ref{tab:main_results}. The $\log g$ columns give the clean-trained calibrator residual scatter $\sigma_{\rm rob}$ (dex; smaller is better) and $R^2$, evaluated without refitting (Section~\ref{sec:results_downstream_logg}). Clean reference, clean-template PCA, and the supervised U-Net use clean data and are non-deployable; em-dashes mark quantities not computed for a row.}
+\caption{Consolidated per-method results on the matched-redshift test set ($z_1$; $10{,}000$ spectra). Reconstruction columns give the mean and median per-spectrum S/N (Equation~\ref{eq:snr_def}) with the $5$--$95\%$ range. The Ca\,\textsc{ii} EW column is the across-spectra mean of the per-spectrum triplet-averaged equivalent-width relative error. Robust per-line Ca\,\textsc{ii} medians with bootstrap intervals are in Table~\ref{tab:main_results}. The $\log g$ columns give the clean-trained calibrator residual scatter $\sigma_{\rm rob}$ (dex; smaller is better) and $R^2$, evaluated without refitting (Section~\ref{sec:results_downstream_logg}). Clean reference, clean-template PCA, and the supervised U-Net use clean data and are non-deployable; em-dashes mark quantities not computed for a row.}
 \label{tab:appendix_baselines}
 \begin{tabular}{lcccccc}
 \hline
@@ -804,17 +796,17 @@ Worst of three families & $2.81\times10^{-4}$ & $1.00\times10^{-3}$ & $6.70\time
 \section{Distributional Reconstruction and Line-Preservation Checks}
 \label{app:line_addenda}
 
-This appendix checks that the reconstruction-S/N gain of Section~\ref{sec:results_denoising} and the line-preservation gain of Section~\ref{sec:results_physical} are distributed across the test-set input-S/N range and across diagnostic lines, rather than driven by a small subset of spectra. The polarity-flip threshold $0.02\,m_{s}$ is fixed across all rows of Table~\ref{tab:main_results} and Table~\ref{tab:appendix_baselines}; no alternative-threshold sweep is used in the claims.
+This appendix checks that the reconstruction-S/N gain of Section~\ref{sec:results_denoising} and the line-preservation gain of Section~\ref{sec:results_physical} are distributed across the test-set input-S/N range and across diagnostic lines, rather than driven by a small subset of spectra.
 
 \paragraph{Full line-sensitive diagnostics.}
-Table~\ref{tab:main_results_full} is the full-precision version of the compact main-text line-preservation table. It preserves the exact polarity and bootstrap details while keeping the Results section within the main-text digit budget.
+Table~\ref{tab:main_results_full} is the full-precision version of the compact main-text line-preservation table. It preserves the exact bootstrap details while keeping the Results section within the main-text digit budget.
 
 % ROLE: full-precision and bootstrap support for the compact main line-preservation table.
 \begin{table}[htbp]
 \centering
 \footnotesize
 \setlength{\tabcolsep}{4pt}
-\caption{Full line-sensitive reconstruction diagnostics on the test split. Equivalent-width entries are per-spectrum medians of the relative error in Equation~\ref{eq:ew_relative_error}; bracketed intervals on the four Ca\,\textsc{ii} rows are $95\%$ paired-bootstrap confidence intervals from $1000$ resamples over the $10{,}000$ test spectra, where the same resample indices are applied to the noisy and denoised columns so the $\Delta$ interval captures per-spectrum correlation. The polarity rows count sign reversals relative to the per-spectrum continuum proxy in Equation~\ref{eq:polarity_flip}. The \mbox{O$_2$} A-band rows are included as a stress test in a high-noise atmospheric window, not as the main-text reconstruction result; bootstrap intervals are not reported on the polarity and \mbox{O$_2$} auxiliary rows.}
+\caption{Full line-sensitive reconstruction diagnostics on the test split. Equivalent-width entries are per-spectrum medians of the relative error in Equation~\ref{eq:ew_relative_error}; bracketed intervals on the four Ca\,\textsc{ii} rows are $95\%$ paired-bootstrap confidence intervals from $1000$ resamples over the $10{,}000$ test spectra, where the same resample indices are applied to the noisy and denoised columns so the $\Delta$ interval captures per-spectrum correlation. The \mbox{O$_2$} A-band rows are included as a stress test in a high-noise atmospheric window, not as the main-text reconstruction result; bootstrap intervals are not reported on the \mbox{O$_2$} auxiliary rows.}
 \label{tab:main_results_full}
 \begin{tabular}{lccc}
 \hline
