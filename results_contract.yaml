@@ -13,20 +13,20 @@ reader_state:
   anchor_terms_defined_in_abstract:
     - blindspot output
     - noisy input
-    - reconstruction RMSE
+    - reconstruction S/N
     - log g calibrator
   anchor_max_body_uses: 6
   setup_metadata_in_methods:
     - blindspot exclusion invariant (Algorithm 1) - Methods 3.2
     - noisy-target Huber loss and consistency identity - Methods 3.1
-    - per-spectrum reconstruction-RMSE definition (Equation rmse_def) - Methods 4
+    - per-spectrum reconstruction-S/N definition (Equation snr_def) - Methods 4
     - canonical simulated support and split definitions (Table 1) - Methods 4
     - calibrator training pool, split sizes, evaluation rule - Appendix A.2
   forward_references_required: []
 narrative_arc:
   pattern: claim_order_not_chronology
   overall_lead_sentence: |
-    On the test reconstruction split, mean per-spectrum reconstruction RMSE falls from 0.084 on the noisy input to 0.0053 on the blindspot output, a factor of about 16.
+    On the held-out reconstruction split, mean per-spectrum reconstruction S/N rises from 7.8 on the noisy input to 124 on the blindspot output, a factor of about 16.
   beats:
     - reconstruction-scale finding leads with comparison against tuned baselines
     - line-preservation diagnostics rule out continuum filling as the source of the gain
@@ -37,7 +37,7 @@ subsections:
     role: finding_update
     hero_claim_id: C1
     answers_question: |
-      Does noisy-only blindspot training reduce reconstruction RMSE on a low-S/N benchmark beyond what validation-tuned classical filters and noisy-PCA can reach?
+      Does noisy-only blindspot training raise reconstruction S/N on a frozen low-S/N benchmark above what validation-tuned classical filters and noisy-PCA can reach?
     evidence_artifacts:
       figures:
         - fig:representative_spectrum
@@ -45,9 +45,11 @@ subsections:
       tables:
         - tab:main_baselines
       numbers:
-        - 0.084
-        - 0.0053
-        - 0.011
+        - 7.8
+        - 124
+        - 27.2
+        - 54.4
+        - 56.0
     forbidden_content:
       - setup
       - motivation
@@ -150,7 +152,7 @@ subsections:
     role: finding_update
     hero_claim_id: C3
     answers_question: |
-          Does the reconstruction-RMSE reduction come with line preservation, or with continuum filling that would silently destroy stellar-analysis information?
+      Does the reconstruction S/N gain come with line preservation, or with continuum filling that would silently destroy stellar-analysis information?
     evidence_artifacts:
       figures:
         - fig:caII_zoom
@@ -161,6 +163,8 @@ subsections:
         - 0.117
         - 0.092
         - 0.143
+        - 0.00290
+        - 3.6
     forbidden_content:
       - setup
       - motivation
@@ -171,18 +175,18 @@ subsections:
       - paragraph_id: results-3-line-preservation-diagnostics.p1
         section_id: results-3-line-preservation-diagnostics
         reader_question: |
-          Why is a separate line-sensitive diagnostic necessary on top of aggregate RMSE?
+          Why is a separate line-sensitive diagnostic necessary on top of aggregate S/N?
         role: motivation
         claim_id: C3
         evidence_id: sec:results_physical
         terms_introduced: []
         numbers_used: []
         delete_test: |
-          Without this paragraph, the reader has no reason to expect that aggregate RMSE could be misleading and that line tests are needed.
+          Without this paragraph, the reader has no reason to expect that aggregate S/N could be misleading and that line tests are needed.
       - paragraph_id: results-3-line-preservation-diagnostics.p2
         section_id: results-3-line-preservation-diagnostics
         reader_question: |
-          What do the Ca II and O2 diagnostics jointly show?
+          What do the Ca II, polarity, and O2 diagnostics jointly show?
         role: finding_update
         claim_id: C3
         evidence_id: sec:results_physical
@@ -213,7 +217,7 @@ display_plan:
   - display_id: tab:main_baselines
     kind: table
     subsection_id: results-1-reconstruction-performance-on-the-held-out-spect
-    function: test-set reconstruction-RMSE comparison against classical and PCA references
+    function: held-out reconstruction-S/N comparison against classical and PCA references
   - display_id: sec:results_downstream_logg
     kind: display
     subsection_id: results-2-downstream-clean-trained-calibrator-transfer
@@ -233,7 +237,7 @@ display_plan:
   - display_id: tab:main_results
     kind: table
     subsection_id: results-3-line-preservation-diagnostics
-    function: per-line Ca II EW error and O2 window diagnostics
+    function: per-line Ca II EW error, polarity flips, and O2 window diagnostics
   - display_id: fig:caII_zoom
     kind: figure
     subsection_id: results-3-line-preservation-diagnostics
@@ -259,8 +263,8 @@ claim_chain:
   - claim_id: C3
     evidence_id: sec:results_physical
     rules_out: |
-      The aggregate reconstruction-RMSE reduction is not delivered by continuum filling; Ca II EW errors decrease and the O2 window stress test improves rather than collapses.
+      The aggregate reconstruction-S/N gain is not delivered by continuum filling (Ca II EW errors fall by ~5x; polarity flips drop by ~100x; O2 window-restricted S/N rises rather than collapses).
     scope_limit: |
-      Continuum-normalized, medium-resolution, late-type BOSZ/PFS-like spectra at magnitude 20.5-22.5 under independent zero-mean per-pixel noise; line measurements use fixed EW windows, not absolute spectrophotometry.
+      Continuum-normalized, medium-resolution, late-type BOSZ/PFS-like spectra at magnitude 20.5-22.5 under independent zero-mean per-pixel noise; line measurements use fixed EW windows and a continuum-relative polarity statistic, not absolute spectrophotometry.
 residue_signature: |
-  After Results, the reader carries: a 16x reconstruction-RMSE reduction on a low-S/N benchmark; the same gain reads through to a clean-trained log g calibrator that no smoother can reach; the absorption-line structure that the calibrator relies on is preserved rather than filled. All three findings are scoped to a continuum-normalized late-type BOSZ/PFS-like simulator with independent per-pixel noise.
+  After Results, the reader carries: a 16x reconstruction-S/N gain on a frozen low-S/N benchmark; the same gain reads through to a clean-trained log g calibrator that no smoother can reach; the absorption-line structure that the calibrator relies on is preserved rather than filled. All three findings are scoped to a continuum-normalized late-type BOSZ/PFS-like simulator with independent per-pixel noise.
