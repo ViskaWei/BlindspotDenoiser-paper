@@ -1,0 +1,33 @@
+paper_id: blindspot-denoiser-standalone
+purpose: >
+  Guard high-risk cross-table numbers and statistic labels that generic TeX lint,
+  sentinels, and ResultsContract checks do not infer. Each check is a reviewer-risk
+  assertion: same label means same statistic/population, and any deliberate
+  difference must be explicit in the table header or caption.
+
+checks:
+  - id: main_reconstruction_rmse_table
+    table_label: tab:main_baselines
+    require_regex: 'Blindspot, no \$\\bar\{\\sigma\}\$\s*&\s*self-supervised\s*&\s*\$0\.00554\$\s*&\s*\$0\.00478\$.*?\\textbf\{Blindspot \$\+\$ \$\\bar\{\\sigma\}\$ \(ours\)\}.*?\$\\mathbf\{0\.00533\}\$\s*&\s*\$\\mathbf\{0\.00460\}\$'
+    forbid_regex: 'Mean S[/]N|Median S[/]N|\\$118\\$|\\$122\\$|\\$154\\$'
+    rationale: The headline reconstruction table must use recomputed RMSE values rather than retired ratio columns.
+
+  - id: rmse_definition_present
+    require_regex: '\\mathrm\{RMSE\}\(z\)\s*=\s*\\frac\{\\lVert x-z\\rVert_\{2\}\}\{\\sqrt\{N\}\}'
+    forbid_regex: '\\frac\{\\lVert x\\rVert_\{2\}\}\{\\lVert x-z\\rVert_\{2\}\}|\\mathrm\{S[/]N\}\(z\)|10\\log_\{10\}'
+    rationale: The retired norm-ratio definition and its logarithmic variant must not remain in the paper.
+
+  - id: full_caii_triplet_median_not_mean
+    table_label: tab:main_results_full
+    require_regex: 'Triplet mean\s*&\s*\$0\.695\$.*?&\s*\$\\mathbf\{0\.122\}\$'
+    rationale: Full line appendix reports robust triplet median values; these must not be replaced by consolidated-table means.
+
+  - id: pca_downstream_claim_not_softened_to_tie
+    require_regex: "principal-component references reach low reconstruction RMSE among the non-neural methods yet reduce the fixed calibrator's downstream accuracy relative to the noisy-input row"
+    forbid_regex: 'principal-component references reach .* yet leave the calibrator no more accurate than the noisy input'
+    rationale: PCA downstream rows are worse than noisy input, not merely tied with it.
+
+  - id: abstract_avoids_full_spectrum_information_overclaim
+    require_regex: "improves an external estimator's access to surface-gravity signal in the full flux vector"
+    forbid_regex: 'recovers full-spectrum information usable by an external estimator'
+    rationale: R^2=0.46 supports downstream-access improvement, not full-spectrum information recovery.
